@@ -44,10 +44,33 @@ function getAdminApp(): App {
   });
 }
 
-const adminApp = getAdminApp();
+// Use Proxies to defer Firebase Admin initialization until runtime.
+// This prevents Next.js from crashing during the build phase when analyzing API routes.
+export const adminAuth = new Proxy({} as ReturnType<typeof getAuth>, {
+  get: (_, prop) => {
+    const auth = getAuth(getAdminApp());
+    const val = auth[prop as keyof typeof auth];
+    return typeof val === 'function' ? val.bind(auth) : val;
+  }
+});
 
-export const adminAuth = getAuth(adminApp);
-export const adminDb = getFirestore(adminApp);
+export const adminDb = new Proxy({} as ReturnType<typeof getFirestore>, {
+  get: (_, prop) => {
+    const dbInstance = getFirestore(getAdminApp());
+    const val = dbInstance[prop as keyof typeof dbInstance];
+    return typeof val === 'function' ? val.bind(dbInstance) : val;
+  }
+});
+
 // Also export as 'db' so older imports still work
 export const db = adminDb;
-export default adminApp;
+
+// Provide a dummy default export to satisfy any `import adminApp from` calls
+const adminAppProxy = new Proxy({} as App, {
+  get: (_, prop) => {
+    const app = getAdminApp();
+    const val = app[prop as keyof App];
+    return typeof val === 'function' ? val.bind(app) : val;
+  }
+});
+export default adminAppProxy;
