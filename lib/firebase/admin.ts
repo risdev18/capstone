@@ -50,7 +50,7 @@ export const adminAuth = new Proxy({} as ReturnType<typeof getAuth>, {
   get: (_, prop) => {
     const auth = getAuth(getAdminApp());
     const val = auth[prop as keyof typeof auth];
-    return typeof val === 'function' ? val.bind(auth) : val;
+    return typeof val === 'function' ? (val as any).bind(auth) : val;
   }
 });
 
@@ -58,7 +58,7 @@ export const adminDb = new Proxy({} as ReturnType<typeof getFirestore>, {
   get: (_, prop) => {
     const dbInstance = getFirestore(getAdminApp());
     const val = dbInstance[prop as keyof typeof dbInstance];
-    return typeof val === 'function' ? val.bind(dbInstance) : val;
+    return typeof val === 'function' ? (val as any).bind(dbInstance) : val;
   }
 });
 
@@ -70,7 +70,7 @@ const adminAppProxy = new Proxy({} as App, {
   get: (_, prop) => {
     const app = getAdminApp();
     const val = app[prop as keyof App];
-    return typeof val === 'function' ? val.bind(app) : val;
+    return typeof val === 'function' ? (val as any).bind(app) : val;
   }
 });
 export default adminAppProxy;
