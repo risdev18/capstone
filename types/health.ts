@@ -1,4 +1,4 @@
-import type { SensorMetric } from './device';
+export type { SensorMetric } from './device';
 
 export type ReadingQuality = 'VALID' | 'SUSPECT' | 'INVALID';
 export type ReadingSource = 'DEVICE' | 'DEMO' | 'MANUAL';

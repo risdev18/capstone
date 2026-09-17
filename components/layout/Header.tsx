@@ -102,7 +102,7 @@ export function Header({ title }: HeaderProps) {
                     <button
                       key={t.value}
                       className={`btn btn-ghost w-full justify-start gap-2 rounded-none px-4 py-2 text-sm ${theme === t.value ? 'text-sky-500' : ''}`}
-                      onClick={() => { setTheme(t.value); setThemeOpen(false); }}
+                      onClick={() => { setTheme(t.value as any); setThemeOpen(false); }}
                     >
                       <t.icon className="h-3.5 w-3.5" />
                       {t.label}

@@ -72,7 +72,7 @@ export function HealthTrendChart({ data, metric, color = '#0ea5e9', height = 300
               if (active && payload && payload.length) {
                 return (
                   <div className="card shadow-lg p-3 rounded-lg border text-sm z-50 bg-card">
-                    <p className="font-semibold mb-1">{format(new Date(label), 'dd MMM, HH:mm')}</p>
+                    <p className="font-semibold mb-1">{format(new Date(label as string | number), 'dd MMM, HH:mm')}</p>
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full" style={{ background: color }} />
                       <span style={{ color: 'var(--muted-fg)' }}>{config?.label}:</span>
