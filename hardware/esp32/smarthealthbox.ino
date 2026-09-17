@@ -40,7 +40,7 @@ const char* WIFI_SSID     = "YOUR_WIFI_SSID";       // ← Change this
 const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";    // ← Change this
 
 // After deploying to Vercel, set this to your deployment URL:
-const char* SERVER_URL    = "https://your-app.vercel.app";  // ← Change this
+const char* SERVER_URL    = "https://capstone-yadr.vercel.app";  // ← Change this
 const char* DEVICE_ID     = "SHB-0001";                     // ← Must match Firestore
 const char* DEVICE_TOKEN  = "your-device-token";            // ← Must match Firestore
 
