@@ -87,7 +87,7 @@ export default function HealthHistoryPage() {
                </thead>
                <tbody>
                   {filteredHistory.map(reading => {
-                     const config = METRIC_CONFIGS[reading.metric as any];
+                     const config = METRIC_CONFIGS[reading.metric as keyof typeof METRIC_CONFIGS];
                      const status = getHealthStatus(reading.metric, reading.value);
                      return (
                         <tr key={reading.id}>

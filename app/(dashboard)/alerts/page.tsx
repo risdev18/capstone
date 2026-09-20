@@ -33,7 +33,7 @@ export default function AlertsPage() {
       });
       toast({ title: 'Alert Acknowledged', variant: 'success' });
     } catch (e) {
-      toast({ title: 'Error acknowledging alert', variant: 'error' });
+      toast({ title: 'Error acknowledging alert', variant: 'destructive' });
     }
   };
 
@@ -75,7 +75,7 @@ export default function AlertsPage() {
                      )}
                      <div>
                         <div className="flex items-center gap-2 mb-1">
-                           <span className="font-semibold text-base">{alert.metric ? METRIC_CONFIGS[alert.metric as any]?.label : 'System'} Alert</span>
+                           <span className="font-semibold text-base">{alert.metric ? METRIC_CONFIGS[alert.metric as keyof typeof METRIC_CONFIGS]?.label : 'System'} Alert</span>
                            <span className={`badge ${alert.severity === 'CRITICAL' ? 'badge-critical' : 'badge-warning'}`}>
                               {alert.severity}
                            </span>
@@ -128,7 +128,7 @@ export default function AlertsPage() {
                                   {alert.severity}
                                </span>
                             </td>
-                            <td className="font-medium">{alert.metric ? METRIC_CONFIGS[alert.metric as any]?.label : 'System'}</td>
+                            <td className="font-medium">{alert.metric ? METRIC_CONFIGS[alert.metric as keyof typeof METRIC_CONFIGS]?.label : 'System'}</td>
                             <td className="max-w-md truncate" title={alert.message}>{alert.message}</td>
                             <td className="text-xs" style={{ color: 'var(--muted-fg)' }}>
                                {alert.acknowledgedAt ? formatRelativeTime(alert.acknowledgedAt) : '-'}

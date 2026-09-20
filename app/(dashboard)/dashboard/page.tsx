@@ -183,7 +183,7 @@ export default function DashboardPage() {
                     <span className={`text-sm font-medium ${event.status === 'TAKEN' ? 'text-[var(--color-success)]' : event.status === 'MISSED' ? 'text-[var(--color-critical)]' : 'text-[var(--color-accent)]'}`}>
                       {event.status}
                     </span>
-                    <p className="text-xs text-[var(--muted-fg)]">{formatRelativeTime(event.eventTime)}</p>
+                    <p className="text-xs text-[var(--muted-fg)]">{formatRelativeTime(event.eventTime ?? event.scheduledTime)}</p>
                   </div>
                </div>
             ))}
