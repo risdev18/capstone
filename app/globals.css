@@ -58,6 +58,21 @@
   color-scheme: light;
 }
 
+/* ─── Dark Mode Variables ───────────────────────────────────────────────────── */
+.dark {
+  --bg: #061211;
+  --fg: #d2ebe7;
+  --card: #0a1f1d;
+  --card-fg: #d2ebe7;
+  --muted: #11312c;
+  --muted-fg: #6f9c95;
+  --border: #143b35;
+  --input: #0a1f1d;
+  --heading: #ffffff;
+
+  color-scheme: dark;
+}
+
 /* ─── Base Styles ───────────────────────────────────────────────────────────── */
 * {
   box-sizing: border-box;

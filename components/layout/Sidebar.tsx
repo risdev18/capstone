@@ -70,7 +70,7 @@ export function Sidebar({ mobile, onClose }: SidebarProps) {
 
   return (
     <aside
-      className={cn('sidebar flex flex-col', mobile && 'w-72 shadow-xl')}
+      className={cn(mobile ? 'w-72 min-h-screen bg-[var(--card)] border-r border-[var(--border)] flex flex-col shadow-xl' : 'sidebar flex flex-col')}
       aria-label="Main navigation"
     >
       {/* Logo */}
