@@ -24,7 +24,7 @@ export default function MedicineBoxPage() {
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Smart Box Overview</h1>
-        <p className="text-muted-foreground mt-2">Live hardware status of your 15-compartment SmartHealth Box.</p>
+        <p className="text-muted-foreground mt-2">Live hardware status of your 15-compartment MediBox.</p>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">

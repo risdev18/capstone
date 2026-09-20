@@ -57,7 +57,7 @@ export default function LoginPage() {
               <Heart className="h-7 w-7 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold">SmartHealth Box</h1>
+              <h1 className="text-xl font-bold">MediBox</h1>
               <p className="text-white/70 text-sm">Connected Health Monitoring</p>
             </div>
           </div>

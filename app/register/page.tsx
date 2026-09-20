@@ -96,6 +96,10 @@ export default function RegisterPage() {
       }
       setErrors(map);
       setLoading(false);
+      const firstErrorKey = Object.keys(map)[0];
+      if (firstErrorKey) {
+        toast({ title: 'Validation Error', description: `${firstErrorKey}: ${map[firstErrorKey]}`, variant: 'destructive' });
+      }
       return;
     }
 
@@ -112,7 +116,7 @@ export default function RegisterPage() {
         weight: form.weight ? parseFloat(form.weight) : undefined,
         bloodGroup: form.bloodGroup || undefined,
       });
-      toast({ title: 'Account created!', description: 'Welcome to SmartHealth Box.', variant: 'success' });
+      toast({ title: 'Account created!', description: 'Welcome to MediBox.', variant: 'success' });
       router.replace('/dashboard');
     } catch (err: unknown) {
       const code = (err as { code?: string })?.code;
@@ -121,7 +125,7 @@ export default function RegisterPage() {
       } else if (code === 'auth/weak-password') {
         setError('Password is too weak. Use at least 8 characters.');
       } else {
-        setError('Registration failed. Please try again.');
+        setError(`Registration failed: ${(err as Error).message || 'Unknown error'}`);
       }
     } finally {
       setLoading(false);
@@ -139,7 +143,7 @@ export default function RegisterPage() {
               <Heart className="h-7 w-7 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold">SmartHealth Box</h1>
+              <h1 className="text-xl font-bold">MediBox</h1>
               <p className="text-white/70 text-sm">Connected Health Monitoring</p>
             </div>
           </div>

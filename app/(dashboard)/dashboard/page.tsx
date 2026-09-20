@@ -148,7 +148,7 @@ export default function DashboardPage() {
         <div className="card rounded-2xl p-6 text-center">
           <WifiOff className="h-8 w-8 text-red-400 mx-auto mb-2" />
           <h2 className="text-base font-semibold">No Device Connected</h2>
-          <p className="text-sm text-[var(--muted-fg)] mt-1 mb-4">Please connect your SmartHealth Box hardware.</p>
+          <p className="text-sm text-[var(--muted-fg)] mt-1 mb-4">Please connect your MediBox hardware.</p>
         </div>
       )}
 

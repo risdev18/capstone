@@ -95,6 +95,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       lastLogin: now,
       ...profileData,
     };
+    
+    // Firebase setDoc crashes if any field is exactly `undefined`
+    Object.keys(newProfile).forEach(key => {
+      if ((newProfile as any)[key] === undefined) {
+        delete (newProfile as any)[key];
+      }
+    });
+
     await setDoc(doc(db, 'users', firebaseUser.uid), newProfile);
     setProfile(newProfile);
   };

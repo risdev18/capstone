@@ -6,11 +6,11 @@ import { Toaster } from '@/components/ui/Toaster';
 
 export const metadata: Metadata = {
   title: {
-    default: 'SmartHealth Box — Connected Health Monitoring Platform',
-    template: '%s | SmartHealth Box',
+    default: 'MediBox — Connected Health Monitoring Platform',
+    template: '%s | MediBox',
   },
   description:
-    'SmartHealth Box is an educational IoT health-monitoring platform for real-time sensor data collection, analytics, and care tracking. Not a substitute for professional medical advice.',
+    'MediBox is an educational IoT health-monitoring platform for real-time sensor data collection, analytics, and care tracking. Not a substitute for professional medical advice.',
   keywords: [
     'health monitoring',
     'IoT healthcare',
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     'health dashboard',
     'capstone project',
   ],
-  authors: [{ name: 'SmartHealth Box Team' }],
+  authors: [{ name: 'MediBox Team' }],
   robots: 'index, follow',
 };
 

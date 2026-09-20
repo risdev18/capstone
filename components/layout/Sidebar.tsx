@@ -80,7 +80,7 @@ export function Sidebar({ mobile, onClose }: SidebarProps) {
             <Heart className="h-4 w-4 text-white" />
           </div>
           <div>
-            <span className="block text-sm font-bold leading-none">SmartHealth Box</span>
+            <span className="block text-sm font-bold leading-none">MediBox</span>
             <span className="block text-[10px] leading-none" style={{ color: 'var(--muted-fg)' }}>
               {profile?.role ?? 'Loading…'}
             </span>

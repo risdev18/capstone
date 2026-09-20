@@ -17,7 +17,7 @@ export default function DevicesPage() {
       <div>
         <h1 className="text-2xl font-bold">Devices</h1>
         <p className="text-sm mt-1" style={{ color: 'var(--muted-fg)' }}>
-          Manage your connected SmartHealth Box devices and sensors.
+          Manage your connected MediBox devices and sensors.
         </p>
       </div>
 

@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'SmartHealth Box — Connected Health Monitoring Platform',
+  title: 'MediBox — Connected Health Monitoring Platform',
   description:
     'An educational IoT health monitoring platform with real-time sensor data, intelligent alerts, and care tracking. Built with ESP32, Next.js, and Firebase.',
 };
@@ -55,7 +55,7 @@ const features = [
   {
     icon: Cpu,
     title: 'Device Management',
-    desc: 'Monitor SmartHealth Box status, battery, Wi-Fi signal, and sensor health.',
+    desc: 'Monitor MediBox status, battery, Wi-Fi signal, and sensor health.',
     color: 'text-emerald-500',
     bg: 'bg-emerald-50 dark:bg-emerald-950',
   },
@@ -127,7 +127,7 @@ export default function LandingPage() {
                 <Heart className="h-5 w-5 text-white" />
               </div>
               <div>
-                <span className="block text-sm font-bold leading-none">SmartHealth Box</span>
+                <span className="block text-sm font-bold leading-none">MediBox</span>
                 <span className="block text-[10px] leading-none" style={{ color: 'var(--muted-fg)' }}>
                   v1.0 · Capstone
                 </span>
@@ -185,7 +185,7 @@ export default function LandingPage() {
               </div>
 
               <h1 className="mb-6 text-5xl font-extrabold leading-tight tracking-tight sm:text-6xl">
-                <span className="gradient-text">SmartHealth</span>
+                <span className="gradient-text">MediBox</span>
                 <br />
                 <span>Box</span>
               </h1>
@@ -269,7 +269,7 @@ export default function LandingPage() {
       <section className="border-y px-4 py-16" style={{ borderColor: 'var(--border)', background: 'var(--card)' }}>
         <div className="mx-auto max-w-7xl">
           <div className="mb-12 text-center">
-            <h2 className="text-3xl font-bold mb-3">What is SmartHealth Box?</h2>
+            <h2 className="text-3xl font-bold mb-3">What is MediBox?</h2>
             <p className="text-lg max-w-2xl mx-auto" style={{ color: 'var(--muted-fg)' }}>
               A connected IoT device that collects health readings from supported sensors 
               and streams them to a secure, real-time web dashboard.
@@ -400,7 +400,7 @@ export default function LandingPage() {
           </div>
           <h2 className="text-3xl font-bold mb-4">Works Without Physical Hardware</h2>
           <p className="text-lg mb-8" style={{ color: 'var(--muted-fg)' }}>
-            SmartHealth Box includes a built-in simulator that generates clearly labeled 
+            MediBox includes a built-in simulator that generates clearly labeled 
             demo readings — perfect for presentations and demonstrations before hardware is connected.
           </p>
           <div className="grid gap-4 sm:grid-cols-3 text-left">
@@ -423,7 +423,7 @@ export default function LandingPage() {
         <div className="mx-auto max-w-4xl text-center">
           <h2 className="text-4xl font-extrabold mb-6">
             Ready to explore{' '}
-            <span className="gradient-text">SmartHealth Box</span>?
+            <span className="gradient-text">MediBox</span>?
           </h2>
           <p className="text-lg mb-10" style={{ color: 'var(--muted-fg)' }}>
             Create an account to access the full dashboard, or sign in to explore the demo.
@@ -449,7 +449,7 @@ export default function LandingPage() {
               <h3 className="font-semibold text-base">Medical Disclaimer</h3>
             </div>
             <p className="text-sm leading-relaxed" style={{ color: 'var(--muted-fg)' }}>
-              SmartHealth Box is an <strong>educational health-monitoring system</strong> developed as 
+              MediBox is an <strong>educational health-monitoring system</strong> developed as 
               an academic capstone project. It is <strong>not a substitute for professional medical advice, 
               diagnosis, or treatment</strong>. All readings are for monitoring and educational purposes only. 
               Always consult a qualified healthcare professional for medical concerns. 
@@ -464,7 +464,7 @@ export default function LandingPage() {
         <div className="mx-auto max-w-7xl flex flex-col sm:flex-row items-center justify-between gap-4 text-sm" style={{ color: 'var(--muted-fg)' }}>
           <div className="flex items-center gap-2">
             <Heart className="h-4 w-4 text-red-500" />
-            <span>SmartHealth Box · Academic Capstone Project</span>
+            <span>MediBox · Academic Capstone Project</span>
           </div>
           <div className="flex items-center gap-4">
             <Link href="/login" className="hover:text-sky-500 transition-colors">Sign In</Link>
