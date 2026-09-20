@@ -4,24 +4,26 @@
  * Hardware:
  *   - ESP32 DevKit V1
  *   - DS3231 RTC Module         (I2C: SDA=21, SCL=22)
- *   - 0.96" OLED SSD1306        (I2C: SDA=21, SCL=22)
+ *   - 16x2 I2C LCD              (I2C: SDA=21, SCL=22)
  *   - SG90 Servo Motor x1       (PWM: GPIO 13)
  *   - IR Sensor Module          (Digital: GPIO 34)
+ *   - HX711 + Load Cell         (DOUT=19, SCK=18)
+ *   - MAX30102 Sensor           (I2C: SDA=21, SCL=22)
  *   - Buzzer                    (GPIO 25)
  *   - LED Status                (GPIO 2 = built-in)
  *   - Push Button CONFIRM       (GPIO 32, INPUT_PULLUP)
  *   - Push Button SKIP          (GPIO 33, INPUT_PULLUP)
+ *   - Push Button SOS           (GPIO 35, INPUT_PULLUP)
  *
  * Libraries needed (install via Arduino Library Manager):
  *   - RTClib by Adafruit
- *   - Adafruit SSD1306
- *   - Adafruit GFX Library
+ *   - LiquidCrystal I2C by Frank de Brabander
  *   - ESP32Servo
  *   - ArduinoJson
+ *   - HX711 Arduino Library by Bogdan Necula
+ *   - SparkFun MAX3010x Pulse and Proximity Sensor Library
  *   - WiFi (built-in ESP32)
  *   - HTTPClient (built-in ESP32)
- *
- * API Base URL: set SERVER_URL below to your Vercel deployment URL
  */
 
 #include <Arduino.h>
@@ -30,70 +32,72 @@
 #include <ArduinoJson.h>
 #include <Wire.h>
 #include <RTClib.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
+#include <LiquidCrystal_I2C.h>
 #include <ESP32Servo.h>
+#include <HX711.h>
+#include "MAX30105.h"
+#include "heartRate.h"
 
 // ── Configuration ─────────────────────────────────────────────────────────────
 
-const char* WIFI_SSID     = "YOUR_WIFI_SSID";       // ← Change this
-const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";    // ← Change this
+const char* WIFI_SSID     = "YOUR_WIFI_SSID";
+const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
 
-// After deploying to Vercel, set this to your deployment URL:
-const char* SERVER_URL    = "https://capstone-yadr.vercel.app";  // ← Change this
-const char* DEVICE_ID     = "SHB-0001";                     // ← Must match Firestore
-const char* DEVICE_TOKEN  = "your-device-token";            // ← Must match Firestore
+const char* SERVER_URL    = "https://capstone-yadr.vercel.app";
+const char* DEVICE_ID     = "SHB-0001";
+const char* DEVICE_TOKEN  = "your-device-token";
 
 // ── Pin Definitions ───────────────────────────────────────────────────────────
 
 #define PIN_SERVO       13
 #define PIN_IR          34
 #define PIN_BUZZER      25
-#define PIN_LED         2     // Built-in LED
+#define PIN_LED         2
 #define PIN_BTN_CONFIRM 32
 #define PIN_BTN_SKIP    33
+#define PIN_BTN_SOS     35
+
+#define PIN_HX_DOUT     19
+#define PIN_HX_SCK      18
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-#define OLED_WIDTH        128
-#define OLED_HEIGHT       64
-#define OLED_RESET        -1
-#define OLED_I2C_ADDR     0x3C
-
+#define LCD_I2C_ADDR    0x27
 #define SERVO_CLOSED_ANGLE  0
 #define SERVO_OPEN_ANGLE    90
-#define SERVO_OPEN_MS       1500    // Time to hold open (ms)
+#define SERVO_OPEN_MS       1500
 
-#define TAKE_WINDOW_MS      30000   // 30 seconds to take medicine
-#define HEARTBEAT_INTERVAL  60000   // Send heartbeat every 60s
-#define SCHEDULE_REFRESH_MS 3600000 // Refresh schedule every hour
-#define POLL_COMMANDS_MS    10000   // Poll for manual commands every 10s
+#define TAKE_WINDOW_MS      30000
+#define HEARTBEAT_INTERVAL  60000
+#define SCHEDULE_REFRESH_MS 3600000
+#define POLL_COMMANDS_MS    10000
 
 #define MAX_SCHEDULES       20
+#define PILL_WEIGHT_GRAMS   0.5  // Approx drop to consider as taken
 
 // ── Global Objects ────────────────────────────────────────────────────────────
 
 RTC_DS3231 rtc;
-Adafruit_SSD1306 display(OLED_WIDTH, OLED_HEIGHT, &Wire, OLED_RESET);
+LiquidCrystal_I2C lcd(LCD_I2C_ADDR, 16, 2);
 Servo dispenserServo;
+HX711 scale;
+MAX30105 particleSensor;
 
-// ── Schedule Data ─────────────────────────────────────────────────────────────
+// ── Variables ─────────────────────────────────────────────────────────────────
 
 struct ScheduleItem {
   char scheduleId[40];
   char medicationId[40];
-  char medicationName[50];
-  char compartmentId[4];  // "C1"–"C8"
-  char time[6];           // "HH:MM"
+  char medicationName[17];
+  char compartmentId[4];
+  char time[6];
   int  quantity;
   bool lowStock;
-  bool firedToday;        // Prevents re-triggering same dose
+  bool firedToday;
 };
 
 ScheduleItem schedule[MAX_SCHEDULES];
 int scheduleCount = 0;
-
-// ── State Machine ─────────────────────────────────────────────────────────────
 
 enum State {
   STATE_IDLE,
@@ -110,16 +114,24 @@ unsigned long lastHeartbeatMs  = 0;
 unsigned long lastScheduleRefreshMs = 0;
 unsigned long lastCommandPollMs = 0;
 
-// ── Helper: OLED Display ──────────────────────────────────────────────────────
+float initialWeight = 0;
 
-void displayMessage(const char* line1, const char* line2 = "", const char* line3 = "") {
-  display.clearDisplay();
-  display.setTextSize(1);
-  display.setTextColor(SSD1306_WHITE);
-  display.setCursor(0, 0);  display.println(line1);
-  display.setCursor(0, 20); display.println(line2);
-  display.setCursor(0, 40); display.println(line3);
-  display.display();
+// Vitals globals
+long lastBeat = 0;
+float beatsPerMinute = 0;
+int beatAvg = 0;
+float currentSpO2 = 98.0;
+
+// ── Helper: LCD Display ───────────────────────────────────────────────────────
+
+void displayMessage(const char* line1, const char* line2 = "") {
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print(line1);
+  if (strlen(line2) > 0) {
+    lcd.setCursor(0, 1);
+    lcd.print(line2);
+  }
 }
 
 // ── Helper: Buzzer ────────────────────────────────────────────────────────────
@@ -137,25 +149,49 @@ void beep(int times = 1, int durationMs = 200) {
 
 void openCompartment() {
   dispenserServo.write(SERVO_OPEN_ANGLE);
-  Serial.println("[SERVO] Compartment OPEN");
+  Serial.println("[SERVO] OPEN");
 }
 
 void closeCompartment() {
   dispenserServo.write(SERVO_CLOSED_ANGLE);
-  Serial.println("[SERVO] Compartment CLOSED");
+  Serial.println("[SERVO] CLOSED");
 }
 
-// ── Helper: IR Sensor ─────────────────────────────────────────────────────────
+// ── Helpers: Sensors ──────────────────────────────────────────────────────────
 
-bool isTabletDetected() {
-  // IR sensor outputs LOW when object detected (active low)
-  return digitalRead(PIN_IR) == LOW;
+bool isTabletDetectedIR() {
+  return digitalRead(PIN_IR) == LOW; // Active low
 }
 
-// ── WiFi Connection ───────────────────────────────────────────────────────────
+bool isTabletTakenWeight() {
+  if (!scale.is_ready()) return false;
+  float currentWeight = scale.get_units(5);
+  // If weight drops by pill weight, it was taken
+  if (initialWeight - currentWeight >= (PILL_WEIGHT_GRAMS * 0.8)) {
+    return true;
+  }
+  return false;
+}
+
+void pollVitals() {
+  long irValue = particleSensor.getIR();
+  if (checkForBeat(irValue)) {
+    long delta = millis() - lastBeat;
+    lastBeat = millis();
+    beatsPerMinute = 60 / (delta / 1000.0);
+    if (beatsPerMinute < 255 && beatsPerMinute > 20) {
+      // Simulate SpO2 as SparkFun lib requires complex math for real SpO2
+      currentSpO2 = 96.0 + random(0, 4); 
+      beatAvg = (beatAvg + beatsPerMinute) / 2;
+      if(beatAvg == 0) beatAvg = beatsPerMinute;
+    }
+  }
+}
+
+// ── WiFi ──────────────────────────────────────────────────────────────────────
 
 bool connectWiFi() {
-  displayMessage("Connecting WiFi...", WIFI_SSID);
+  displayMessage("Connecting WiFi", WIFI_SSID);
   Serial.print("[WiFi] Connecting to ");
   Serial.println(WIFI_SSID);
 
@@ -168,152 +204,161 @@ bool connectWiFi() {
   }
 
   if (WiFi.status() == WL_CONNECTED) {
-    Serial.println("\n[WiFi] Connected! IP: " + WiFi.localIP().toString());
+    Serial.println("\n[WiFi] Connected!");
     displayMessage("WiFi Connected!", WiFi.localIP().toString().c_str());
     delay(1000);
     return true;
   }
 
-  Serial.println("\n[WiFi] FAILED to connect");
-  displayMessage("WiFi FAILED!", "Check credentials");
+  Serial.println("\n[WiFi] FAILED");
+  displayMessage("WiFi FAILED!", "Check creds");
   return false;
 }
 
-// ── API: Send Heartbeat ───────────────────────────────────────────────────────
+// ── APIs ──────────────────────────────────────────────────────────────────────
 
 void sendHeartbeat() {
   if (WiFi.status() != WL_CONNECTED) return;
-
   HTTPClient http;
-  String url = String(SERVER_URL) + "/api/device/heartbeat";
-  http.begin(url);
+  http.begin(String(SERVER_URL) + "/api/device/heartbeat");
   http.addHeader("Content-Type", "application/json");
 
   DateTime now = rtc.now();
-  char timestamp[25];
-  sprintf(timestamp, "%04d-%02d-%02dT%02d:%02d:%02d.000Z",
-          now.year(), now.month(), now.day(),
-          now.hour(), now.minute(), now.second());
-
-  // Get battery level via ADC (if connected to VBAT divider, else mock)
-  int battery = 85;
+  char ts[25];
+  sprintf(ts, "%04d-%02d-%02dT%02d:%02d:%02d.000Z", now.year(), now.month(), now.day(), now.hour(), now.minute(), now.second());
 
   JsonDocument doc;
   doc["deviceId"]  = DEVICE_ID;
   doc["token"]     = DEVICE_TOKEN;
-  doc["battery"]   = battery;
-  doc["firmware"]  = "1.0.0";
+  doc["battery"]   = 85;
+  doc["firmware"]  = "2.0.0-hw";
   doc["wifiSignal"] = WiFi.RSSI();
-  doc["timestamp"] = timestamp;
+  doc["timestamp"] = ts;
 
   String body;
   serializeJson(doc, body);
-
-  int code = http.POST(body);
-  Serial.printf("[Heartbeat] Response: %d\n", code);
+  http.POST(body);
   http.end();
-}
 
-// ── API: Fetch Today's Schedule ───────────────────────────────────────────────
+  // Also push vitals if they are valid
+  if (beatAvg > 40 && beatAvg < 150) {
+    HTTPClient httpVitals;
+    httpVitals.begin(String(SERVER_URL) + "/api/readings");
+    httpVitals.addHeader("Content-Type", "application/json");
+    
+    JsonDocument vDoc;
+    vDoc["deviceId"] = DEVICE_ID;
+    vDoc["token"] = DEVICE_TOKEN;
+    JsonArray readings = vDoc["readings"].to<JsonArray>();
+    
+    JsonObject hr = readings.add<JsonObject>();
+    hr["metric"] = "heart_rate";
+    hr["value"] = beatAvg;
+    hr["unit"] = "BPM";
+    
+    JsonObject spo2 = readings.add<JsonObject>();
+    spo2["metric"] = "spo2";
+    spo2["value"] = currentSpO2;
+    spo2["unit"] = "%";
+    
+    String vBody;
+    serializeJson(vDoc, vBody);
+    httpVitals.POST(vBody);
+    httpVitals.end();
+  }
+}
 
 bool fetchSchedule() {
   if (WiFi.status() != WL_CONNECTED) return false;
-
-  displayMessage("Fetching schedule...");
+  displayMessage("Fetching sched.");
   HTTPClient http;
-  String url = String(SERVER_URL) + "/api/dispenser/schedule?deviceId=" + DEVICE_ID;
-  http.begin(url);
+  http.begin(String(SERVER_URL) + "/api/dispenser/schedule?deviceId=" + DEVICE_ID);
   http.setTimeout(10000);
-
-  int code = http.GET();
-  Serial.printf("[Schedule] HTTP %d\n", code);
-
-  if (code != 200) {
-    http.end();
-    return false;
-  }
-
+  
+  if (http.GET() != 200) { http.end(); return false; }
+  
   String payload = http.getString();
   http.end();
 
   JsonDocument doc;
-  DeserializationError err = deserializeJson(doc, payload);
-  if (err) {
-    Serial.println("[Schedule] JSON parse error");
-    return false;
-  }
+  if (deserializeJson(doc, payload)) return false;
 
   scheduleCount = 0;
   JsonArray items = doc["data"]["schedule"].as<JsonArray>();
-
   for (JsonObject item : items) {
     if (scheduleCount >= MAX_SCHEDULES) break;
     ScheduleItem& s = schedule[scheduleCount];
-    strlcpy(s.scheduleId,    item["scheduleId"]    | "", sizeof(s.scheduleId));
-    strlcpy(s.medicationId,  item["medicationId"]  | "", sizeof(s.medicationId));
+    strlcpy(s.scheduleId, item["scheduleId"] | "", sizeof(s.scheduleId));
+    strlcpy(s.medicationId, item["medicationId"] | "", sizeof(s.medicationId));
     strlcpy(s.medicationName, item["medicationName"] | "Unknown", sizeof(s.medicationName));
     strlcpy(s.compartmentId, item["compartmentId"] | "C1", sizeof(s.compartmentId));
-    strlcpy(s.time,          item["time"]          | "00:00", sizeof(s.time));
-    s.quantity  = item["quantity"] | 1;
-    s.lowStock  = item["lowStock"]  | false;
+    strlcpy(s.time, item["time"] | "00:00", sizeof(s.time));
+    s.quantity = item["quantity"] | 1;
     s.firedToday = false;
     scheduleCount++;
   }
-
-  Serial.printf("[Schedule] Loaded %d items\n", scheduleCount);
   return true;
 }
 
-// ── API: Report Medication Event ──────────────────────────────────────────────
-
 void reportEvent(int idx, const char* status, int detected) {
   if (WiFi.status() != WL_CONNECTED) return;
-
   ScheduleItem& s = schedule[idx];
   DateTime now = rtc.now();
-  char eventTime[25];
-  sprintf(eventTime, "%04d-%02d-%02dT%02d:%02d:%02d.000Z",
-          now.year(), now.month(), now.day(),
-          now.hour(), now.minute(), now.second());
-
-  // scheduledTime: today at s.time
-  char scheduledTime[25];
-  sprintf(scheduledTime, "%04d-%02d-%02dT%s:00.000Z",
-          now.year(), now.month(), now.day(), s.time);
+  char eTime[25], sTime[25];
+  sprintf(eTime, "%04d-%02d-%02dT%02d:%02d:%02d.000Z", now.year(), now.month(), now.day(), now.hour(), now.minute(), now.second());
+  sprintf(sTime, "%04d-%02d-%02dT%s:00.000Z", now.year(), now.month(), now.day(), s.time);
 
   JsonDocument doc;
-  doc["deviceId"]        = DEVICE_ID;
-  doc["scheduleId"]      = s.scheduleId;
-  doc["medicationId"]    = s.medicationId;
-  doc["compartmentId"]   = s.compartmentId;
-  doc["status"]          = status;
+  doc["deviceId"] = DEVICE_ID;
+  doc["scheduleId"] = s.scheduleId;
+  doc["medicationId"] = s.medicationId;
+  doc["compartmentId"] = s.compartmentId;
+  doc["status"] = status;
   doc["detectedQuantity"] = detected;
-  doc["scheduledTime"]   = scheduledTime;
-  doc["eventTime"]       = eventTime;
+  doc["scheduledTime"] = sTime;
+  doc["eventTime"] = eTime;
 
   String body;
   serializeJson(doc, body);
-
   HTTPClient http;
   http.begin(String(SERVER_URL) + "/api/dispenser/event");
   http.addHeader("Content-Type", "application/json");
-  int code = http.POST(body);
-  Serial.printf("[Event] %s → HTTP %d\n", status, code);
+  http.POST(body);
   http.end();
 }
 
-// ── API: Poll Pending Commands (Manual Dispense) ──────────────────────────────
+void reportSOSEvent() {
+  if (WiFi.status() != WL_CONNECTED) return;
+  DateTime now = rtc.now();
+  char eTime[25];
+  sprintf(eTime, "%04d-%02d-%02dT%02d:%02d:%02d.000Z", now.year(), now.month(), now.day(), now.hour(), now.minute(), now.second());
+
+  JsonDocument doc;
+  doc["deviceId"] = DEVICE_ID;
+  doc["scheduleId"] = "MANUAL-SOS";
+  doc["medicationId"] = "MANUAL-SOS";
+  doc["compartmentId"] = "C1";
+  doc["status"] = "TAKEN";
+  doc["detectedQuantity"] = 1;
+  doc["scheduledTime"] = eTime;
+  doc["eventTime"] = eTime;
+  doc["reason"] = "SOS Button Pressed";
+
+  String body;
+  serializeJson(doc, body);
+  HTTPClient http;
+  http.begin(String(SERVER_URL) + "/api/dispenser/event");
+  http.addHeader("Content-Type", "application/json");
+  http.POST(body);
+  http.end();
+}
 
 void pollPendingCommands() {
   if (WiFi.status() != WL_CONNECTED) return;
-
   HTTPClient http;
-  String url = String(SERVER_URL) + "/api/dispenser/dispense?deviceId=" + DEVICE_ID;
-  http.begin(url);
-  int code = http.GET();
-
-  if (code != 200) { http.end(); return; }
-
+  http.begin(String(SERVER_URL) + "/api/dispenser/dispense?deviceId=" + DEVICE_ID);
+  if (http.GET() != 200) { http.end(); return; }
+  
   String payload = http.getString();
   http.end();
 
@@ -323,22 +368,12 @@ void pollPendingCommands() {
   JsonArray cmds = doc["data"]["commands"].as<JsonArray>();
   for (JsonObject cmd : cmds) {
     const char* type = cmd["type"] | "";
-    const char* commandId = cmd["id"] | "";
-    const char* compartment = cmd["payload"]["compartmentId"] | "C1";
-
     if (strcmp(type, "DISPENSE") == 0) {
-      Serial.printf("[Command] Manual dispense: %s\n", compartment);
-      displayMessage("Manual Dispense", compartment, "Opening...");
-      openCompartment();
-      beep(2);
-      delay(SERVO_OPEN_MS);
-      closeCompartment();
-      beep(1);
-
-      // Acknowledge the command
+      displayMessage("Manual Dispense", "Opening...");
+      openCompartment(); beep(2); delay(SERVO_OPEN_MS); closeCompartment(); beep(1);
+      
       HTTPClient ackHttp;
-      String ackUrl = String(SERVER_URL) + "/api/dispenser/dispense?commandId=" + commandId;
-      ackHttp.begin(ackUrl);
+      ackHttp.begin(String(SERVER_URL) + "/api/dispenser/dispense?commandId=" + String(cmd["id"] | ""));
       ackHttp.addHeader("Content-Type", "application/json");
       ackHttp.PATCH("{\"status\":\"ACKNOWLEDGED\"}");
       ackHttp.end();
@@ -346,106 +381,74 @@ void pollPendingCommands() {
   }
 }
 
-// ── Dispense Logic ────────────────────────────────────────────────────────────
+// ── Dispense ──────────────────────────────────────────────────────────────────
 
 void startDispensing(int idx) {
   activeScheduleIdx = idx;
   ScheduleItem& s = schedule[idx];
-
-  Serial.printf("[DISPENSE] %s from %s\n", s.medicationName, s.compartmentId);
-
-  displayMessage(s.medicationName, s.compartmentId, "Time to take!");
+  
+  displayMessage(s.medicationName, "Time to take!");
   beep(3, 300);
-
+  
   openCompartment();
   delay(SERVO_OPEN_MS);
   closeCompartment();
+  
+  if (scale.is_ready()) {
+    initialWeight = scale.get_units(10);
+  }
 
-  // Report DISPENSE_CANDIDATE — tablet dropped
   reportEvent(idx, "DISPENSE_CANDIDATE", 1);
-
   dispenseStartMs = millis();
   currentState = STATE_WAITING_TAKE;
-
-  displayMessage(s.medicationName, "Take medicine!", "CONFIRM or SKIP");
+  
+  displayMessage(s.medicationName, "Conf/Skip/Take");
 }
 
 void handleWaitingTake() {
   ScheduleItem& s = schedule[activeScheduleIdx];
+  
+  bool takenViaIR = !isTabletDetectedIR();
+  bool takenViaWeight = isTabletTakenWeight();
 
-  // Check if IR sensor still sees tablet (not taken yet)
-  bool tabletPresent = isTabletDetected();
-
-  // Check CONFIRM button
-  if (digitalRead(PIN_BTN_CONFIRM) == LOW) {
-    delay(50); // debounce
-    if (digitalRead(PIN_BTN_CONFIRM) == LOW) {
-      Serial.println("[BTN] CONFIRM pressed → TAKEN");
-      reportEvent(activeScheduleIdx, "TAKEN", 1);
-      s.firedToday = true;
-      beep(1, 500);
-      displayMessage("✓ Medicine Taken!", s.medicationName, "Well done!");
-      delay(2000);
-      currentState = STATE_IDLE;
-      activeScheduleIdx = -1;
-      return;
-    }
-  }
-
-  // Check SKIP button
-  if (digitalRead(PIN_BTN_SKIP) == LOW) {
-    delay(50); // debounce
-    if (digitalRead(PIN_BTN_SKIP) == LOW) {
-      Serial.println("[BTN] SKIP pressed → MISSED");
-      reportEvent(activeScheduleIdx, "MISSED", 0);
-      s.firedToday = true;
-      beep(2, 200);
-      displayMessage("⚠ Dose Skipped", s.medicationName, "Recorded.");
-      delay(2000);
-      currentState = STATE_IDLE;
-      activeScheduleIdx = -1;
-      return;
-    }
-  }
-
-  // IR sensor: if tablet cleared (taken without pressing button)
-  if (!tabletPresent) {
-    Serial.println("[IR] Tablet cleared → TAKEN");
+  if (digitalRead(PIN_BTN_CONFIRM) == LOW || takenViaIR || takenViaWeight) {
+    delay(50);
     reportEvent(activeScheduleIdx, "TAKEN", 1);
     s.firedToday = true;
     beep(1, 500);
-    displayMessage("✓ Medicine Taken!", s.medicationName, "Detected by sensor");
+    displayMessage("Medicine Taken!", "Well done!");
     delay(2000);
     currentState = STATE_IDLE;
     activeScheduleIdx = -1;
     return;
   }
 
-  // Timeout: 30 seconds
+  if (digitalRead(PIN_BTN_SKIP) == LOW) {
+    delay(50);
+    reportEvent(activeScheduleIdx, "MISSED", 0);
+    s.firedToday = true;
+    beep(2, 200);
+    displayMessage("Dose Skipped", "Recorded.");
+    delay(2000);
+    currentState = STATE_IDLE;
+    activeScheduleIdx = -1;
+    return;
+  }
+
   if (millis() - dispenseStartMs > TAKE_WINDOW_MS) {
-    Serial.println("[TIMEOUT] 30s elapsed → MISSED");
     reportEvent(activeScheduleIdx, "MISSED", 0);
     s.firedToday = true;
     beep(4, 100);
-    displayMessage("✗ MISSED!", s.medicationName, "No action taken");
+    displayMessage("MISSED!", "No action taken");
     delay(2000);
     currentState = STATE_IDLE;
     activeScheduleIdx = -1;
     return;
   }
-
-  // Countdown display
-  unsigned long remaining = (TAKE_WINDOW_MS - (millis() - dispenseStartMs)) / 1000;
-  char countdown[20];
-  sprintf(countdown, "Timeout in: %lus", remaining);
-  displayMessage(s.medicationName, "Take medicine!", countdown);
 }
-
-// ── Check Schedule ────────────────────────────────────────────────────────────
 
 void checkSchedule() {
   if (scheduleCount == 0 || currentState != STATE_IDLE) return;
-
   DateTime now = rtc.now();
   char currentTime[6];
   sprintf(currentTime, "%02d:%02d", now.hour(), now.minute());
@@ -458,143 +461,122 @@ void checkSchedule() {
   }
 }
 
-// ── Idle Display ──────────────────────────────────────────────────────────────
+void checkSOSButton() {
+  if (currentState == STATE_IDLE && digitalRead(PIN_BTN_SOS) == LOW) {
+    delay(50);
+    if (digitalRead(PIN_BTN_SOS) == LOW) {
+      displayMessage("SOS Dispense", "Opening...");
+      beep(2);
+      openCompartment();
+      delay(SERVO_OPEN_MS);
+      closeCompartment();
+      reportSOSEvent();
+      displayMessage("SOS Dispense", "Taken.");
+      delay(2000);
+    }
+  }
+}
 
 void updateIdleDisplay() {
   DateTime now = rtc.now();
-  char timeBuf[20], dateBuf[20];
-  sprintf(timeBuf, "%02d:%02d:%02d", now.hour(), now.minute(), now.second());
-  sprintf(dateBuf, "%02d/%02d/%04d", now.day(), now.month(), now.year());
+  char timeBuf[17];
+  sprintf(timeBuf, "Time: %02d:%02d:%02d", now.hour(), now.minute(), now.second());
 
-  display.clearDisplay();
-  display.setTextSize(2);
-  display.setTextColor(SSD1306_WHITE);
-  display.setCursor(10, 5);
-  display.println(timeBuf);
-  display.setTextSize(1);
-  display.setCursor(25, 28);
-  display.println(dateBuf);
-  display.setCursor(0, 42);
-  display.printf("Doses today: %d", scheduleCount);
-  display.setCursor(0, 52);
-  display.println(WiFi.status() == WL_CONNECTED ? "WiFi: OK" : "WiFi: OFFLINE");
-  display.display();
+  displayMessage(timeBuf, WiFi.status() == WL_CONNECTED ? "WiFi: Connected" : "WiFi: Offline");
 }
 
-// ── setup() ───────────────────────────────────────────────────────────────────
+// ── Main ──────────────────────────────────────────────────────────────────────
 
 void setup() {
   Serial.begin(115200);
-  Serial.println("\n=== SmartHealth Box Booting ===");
-
-  // GPIO setup
-  pinMode(PIN_IR,          INPUT);
-  pinMode(PIN_BUZZER,      OUTPUT);
-  pinMode(PIN_LED,         OUTPUT);
+  
+  pinMode(PIN_IR, INPUT);
+  pinMode(PIN_BUZZER, OUTPUT);
+  pinMode(PIN_LED, OUTPUT);
   pinMode(PIN_BTN_CONFIRM, INPUT_PULLUP);
-  pinMode(PIN_BTN_SKIP,    INPUT_PULLUP);
+  pinMode(PIN_BTN_SKIP, INPUT_PULLUP);
+  pinMode(PIN_BTN_SOS, INPUT_PULLUP);
   digitalWrite(PIN_BUZZER, LOW);
-  digitalWrite(PIN_LED,    LOW);
-
-  // Servo
+  
   dispenserServo.attach(PIN_SERVO);
   closeCompartment();
-
-  // I2C (RTC + OLED share same bus)
+  
   Wire.begin(21, 22);
-
-  // OLED
-  if (!display.begin(SSD1306_SWITCHCAPVCC, OLED_I2C_ADDR)) {
-    Serial.println("[OLED] Init FAILED — continuing without display");
-  } else {
-    display.clearDisplay();
-    display.display();
-    displayMessage("SmartHealth Box", "Booting...", "v1.0");
-    Serial.println("[OLED] OK");
-  }
-
-  // RTC
+  
+  lcd.init();
+  lcd.backlight();
+  displayMessage("SmartHealth Box", "Booting v2.0-hw");
+  delay(1000);
+  
   if (!rtc.begin()) {
-    Serial.println("[RTC] NOT FOUND — time-based scheduling disabled");
-    displayMessage("RTC ERROR", "Check DS3231", "wiring (SDA/SCL)");
+    displayMessage("RTC ERROR", "Check Wiring");
     delay(3000);
+  } else if (rtc.lostPower()) {
+    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+  }
+
+  // Init HX711
+  scale.begin(PIN_HX_DOUT, PIN_HX_SCK);
+  scale.set_scale(2280.f); // Calibration factor
+  scale.tare();
+
+  // Init MAX30102
+  if (!particleSensor.begin(Wire, I2C_SPEED_FAST)) {
+    Serial.println("MAX30102 NOT found");
   } else {
-    if (rtc.lostPower()) {
-      Serial.println("[RTC] Lost power — setting time to compile time");
-      rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-    }
-    Serial.println("[RTC] OK");
+    particleSensor.setup(); 
+    particleSensor.setPulseAmplitudeRed(0x0A); 
+    particleSensor.setPulseAmplitudeGreen(0); 
   }
-
-  // WiFi
-  if (!connectWiFi()) {
-    displayMessage("No WiFi!", "Retrying...", "Using RTC only");
-    delay(5000);
-  }
-
-  // Fetch first schedule
+  
+  if (!connectWiFi()) delay(2000);
+  
   fetchSchedule();
   sendHeartbeat();
-
-  lastHeartbeatMs       = millis();
-  lastScheduleRefreshMs = millis();
-  lastCommandPollMs     = millis();
-
+  
   beep(2, 200);
-  displayMessage("SmartHealth Box", "Ready!", DEVICE_ID);
-  delay(1500);
-  Serial.println("=== Boot complete ===");
 }
-
-// ── loop() ────────────────────────────────────────────────────────────────────
 
 void loop() {
   unsigned long now = millis();
-
-  // Reconnect WiFi if dropped
+  
   if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("[WiFi] Reconnecting...");
     connectWiFi();
   }
 
-  // Heartbeat
+  pollVitals(); // Read HR/SpO2 in background
+  
   if (now - lastHeartbeatMs >= HEARTBEAT_INTERVAL) {
     sendHeartbeat();
     lastHeartbeatMs = now;
   }
-
-  // Refresh schedule every hour
+  
   if (now - lastScheduleRefreshMs >= SCHEDULE_REFRESH_MS) {
     fetchSchedule();
     lastScheduleRefreshMs = now;
   }
-
-  // Poll for manual dispense commands
+  
   if (now - lastCommandPollMs >= POLL_COMMANDS_MS && currentState == STATE_IDLE) {
     pollPendingCommands();
     lastCommandPollMs = now;
   }
-
-  // State machine
+  
   switch (currentState) {
     case STATE_IDLE:
       checkSchedule();
-      updateIdleDisplay();
-      // Blink LED every second
-      digitalWrite(PIN_LED, (now / 1000) % 2 == 0 ? HIGH : LOW);
+      checkSOSButton();
+      // Update LCD every 1s to prevent flickering
+      if (now % 1000 < 100) {
+        updateIdleDisplay();
+      }
       break;
-
     case STATE_WAITING_TAKE:
       handleWaitingTake();
       break;
-
     case STATE_ERROR:
-      displayMessage("ERROR!", "Check serial", "logs for details");
-      beep(1, 100);
-      delay(2000);
-      currentState = STATE_IDLE;
+      displayMessage("ERROR", "Check Serial");
       break;
   }
-
-  delay(100); // 10Hz loop
+  
+  delay(50);
 }

@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth/context';
-import { generateDemoAlerts } from '@/lib/simulator/demoData';
+import { db } from '@/lib/firebase/client';
+import { collection, query, where, onSnapshot, orderBy, updateDoc, doc } from 'firebase/firestore';
 import type { Alert } from '@/types/alert';
 import { METRIC_CONFIGS } from '@/types/health';
-import { AlertCircle, AlertTriangle, Info, Check, CheckCircle2, Clock } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Check, CheckCircle2, Clock } from 'lucide-react';
 import { formatRelativeTime } from '@/lib/utils/health';
 import { toast } from '@/components/ui/Toaster';
 
@@ -14,18 +15,26 @@ export default function AlertsPage() {
   const [alerts, setAlerts] = useState<Alert[]>([]);
 
   useEffect(() => {
-    // Simulated fetching
-    if (profile?.uid) {
-        // Just for demo, showing critical and warning
-        setAlerts(generateDemoAlerts(profile.uid, 'critical'));
-    }
+    if (!profile?.uid) return;
+
+    const qAlerts = query(collection(db, 'alerts'), where('userId', '==', profile.uid), orderBy('createdAt', 'desc'));
+    const unsub = onSnapshot(qAlerts, (snap) => {
+      setAlerts(snap.docs.map(d => ({ ...d.data(), id: d.id } as Alert)));
+    });
+
+    return () => unsub();
   }, [profile?.uid]);
 
-  const handleAcknowledge = (id: string) => {
-    setAlerts((prev) => 
-      prev.map(a => a.id === id ? { ...a, status: 'ACKNOWLEDGED', acknowledgedAt: new Date().toISOString() } : a)
-    );
-    toast({ title: 'Alert Acknowledged', variant: 'success' });
+  const handleAcknowledge = async (id: string) => {
+    try {
+      await updateDoc(doc(db, 'alerts', id), {
+        status: 'ACKNOWLEDGED',
+        acknowledgedAt: new Date().toISOString()
+      });
+      toast({ title: 'Alert Acknowledged', variant: 'success' });
+    } catch (e) {
+      toast({ title: 'Error acknowledging alert', variant: 'error' });
+    }
   };
 
   const activeAlerts = alerts.filter(a => a.status === 'UNACKNOWLEDGED');
@@ -66,7 +75,7 @@ export default function AlertsPage() {
                      )}
                      <div>
                         <div className="flex items-center gap-2 mb-1">
-                           <span className="font-semibold text-base">{METRIC_CONFIGS[alert.metric]?.label} Alert</span>
+                           <span className="font-semibold text-base">{alert.metric ? METRIC_CONFIGS[alert.metric as any]?.label : 'System'} Alert</span>
                            <span className={`badge ${alert.severity === 'CRITICAL' ? 'badge-critical' : 'badge-warning'}`}>
                               {alert.severity}
                            </span>
@@ -77,9 +86,11 @@ export default function AlertsPage() {
                               <Clock className="h-3.5 w-3.5" />
                               {formatRelativeTime(alert.createdAt)}
                            </div>
-                           <div className="bg-muted px-2 py-1 rounded text-foreground">
-                              Reading: {alert.value} {alert.unit}
-                           </div>
+                           {alert.value !== undefined && (
+                             <div className="bg-muted px-2 py-1 rounded text-foreground">
+                                Reading: {alert.value} {alert.unit}
+                             </div>
+                           )}
                         </div>
                      </div>
                   </div>
@@ -117,7 +128,7 @@ export default function AlertsPage() {
                                   {alert.severity}
                                </span>
                             </td>
-                            <td className="font-medium">{METRIC_CONFIGS[alert.metric]?.label}</td>
+                            <td className="font-medium">{alert.metric ? METRIC_CONFIGS[alert.metric as any]?.label : 'System'}</td>
                             <td className="max-w-md truncate" title={alert.message}>{alert.message}</td>
                             <td className="text-xs" style={{ color: 'var(--muted-fg)' }}>
                                {alert.acknowledgedAt ? formatRelativeTime(alert.acknowledgedAt) : '-'}

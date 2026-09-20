@@ -1,38 +1,38 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth/context';
-import { DEMO_DEVICE, tickLiveReadings, type DemoScenario } from '@/lib/simulator/demoData';
+import { db } from '@/lib/firebase/client';
+import { collection, query, where, onSnapshot, orderBy, limit } from 'firebase/firestore';
 import { getHealthStatus, getStatusColor, getStatusBg, formatRelativeTime, formatValue } from '@/lib/utils/health';
 import { METRIC_CONFIGS, type HealthReading } from '@/types/health';
-import { Heart, Droplets, Thermometer, Activity, RefreshCw } from 'lucide-react';
+import { Heart, Droplets, Thermometer, Activity } from 'lucide-react';
 
 type Metric = 'heart_rate' | 'spo2' | 'temperature' | 'blood_pressure_systolic';
 
 export default function LiveMonitoringPage() {
   const { profile } = useAuth();
-  const [scenario, setScenario] = useState<DemoScenario>('normal');
   const [readings, setReadings] = useState<Partial<Record<Metric, HealthReading>>>({});
-  const [lastSync, setLastSync] = useState<Date>(new Date());
-
-  const refresh = useCallback(() => {
-    const userId = profile?.uid ?? 'demo-user';
-    const live = tickLiveReadings(userId, scenario) as HealthReading[];
-    const map: Partial<Record<Metric, HealthReading>> = {};
-    for (const r of live) {
-      if (['heart_rate', 'spo2', 'temperature', 'blood_pressure_systolic'].includes(r.metric)) {
-        map[r.metric as Metric] = r;
-      }
-    }
-    setReadings(map);
-    setLastSync(new Date());
-  }, [profile?.uid, scenario]);
 
   useEffect(() => {
-    refresh();
-    const interval = setInterval(refresh, 5000); // 5 seconds for live view
-    return () => clearInterval(interval);
-  }, [refresh]);
+    if (!profile?.uid) return;
+
+    // Fetch Latest Readings
+    const qHistory = query(collection(db, 'readings'), where('userId', '==', profile.uid), orderBy('timestamp', 'desc'), limit(50));
+    const unsub = onSnapshot(qHistory, (snap) => {
+      const docs = snap.docs.map(d => d.data() as HealthReading);
+      
+      const latest: Partial<Record<Metric, HealthReading>> = {};
+      for (const r of docs) {
+        if (!latest[r.metric as Metric]) {
+          latest[r.metric as Metric] = r;
+        }
+      }
+      setReadings(latest);
+    });
+
+    return () => unsub();
+  }, [profile?.uid]);
 
   return (
     <div className="space-y-6">
@@ -45,11 +45,8 @@ export default function LiveMonitoringPage() {
         </div>
         <div className="flex items-center gap-4">
            <div className="flex items-center gap-2 text-sm font-medium">
-              <span className="live-dot" /> Live
+              <span className="live-dot" /> Live from Device
            </div>
-           <button onClick={refresh} className="btn btn-secondary btn-sm gap-2">
-              <RefreshCw className="h-4 w-4" /> Refresh
-           </button>
         </div>
       </div>
 
@@ -68,7 +65,7 @@ export default function LiveMonitoringPage() {
                         <Icon className={`h-5 w-5 ${getStatusColor(status)}`} />
                         <span className="font-semibold text-sm">{config.label}</span>
                      </div>
-                     <span className={`badge ${status === 'NORMAL' ? 'badge-normal' : status === 'WARNING' ? 'badge-warning' : 'badge-critical'}`}>
+                     <span className={`badge ${status === 'NORMAL' ? 'badge-normal' : status === 'WARNING' ? 'badge-warning' : status === 'CRITICAL' ? 'badge-critical' : 'badge-offline'}`}>
                         {status}
                      </span>
                   </div>
@@ -83,7 +80,7 @@ export default function LiveMonitoringPage() {
                </div>
                <div className="mt-4 pt-4 border-t border-black/10 dark:border-white/10 flex justify-between items-center text-xs">
                   <span style={{ color: 'var(--muted-fg)' }}>Updated:</span>
-                  <span className="font-medium">{reading ? formatRelativeTime(reading.timestamp) : 'Waiting...'}</span>
+                  <span className="font-medium">{reading ? formatRelativeTime(reading.timestamp) : 'Waiting for hardware...'}</span>
                </div>
             </div>
           );

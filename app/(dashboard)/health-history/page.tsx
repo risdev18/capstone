@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth/context';
-import { generateDemoHistory } from '@/lib/simulator/demoData';
+import { db } from '@/lib/firebase/client';
+import { collection, query, where, onSnapshot, orderBy, limit } from 'firebase/firestore';
 import type { HealthReading } from '@/types/health';
 import { METRIC_CONFIGS, type SensorMetric } from '@/types/health';
 import { getHealthStatus, formatValue, formatTimestamp } from '@/lib/utils/health';
@@ -15,9 +16,15 @@ export default function HealthHistoryPage() {
   const [filterMetric, setFilterMetric] = useState<SensorMetric | 'ALL'>('ALL');
   
   useEffect(() => {
-    if (profile?.uid) {
-       setHistory(generateDemoHistory(profile.uid, 24, 'normal'));
-    }
+    if (!profile?.uid) return;
+
+    // Fetch up to 100 recent readings
+    const qHistory = query(collection(db, 'readings'), where('userId', '==', profile.uid), orderBy('timestamp', 'desc'), limit(100));
+    const unsub = onSnapshot(qHistory, (snap) => {
+      setHistory(snap.docs.map(d => ({ ...d.data(), id: d.id } as HealthReading)));
+    });
+
+    return () => unsub();
   }, [profile?.uid]);
 
   const filteredHistory = history.filter(h => filterMetric === 'ALL' || h.metric === filterMetric)
@@ -50,7 +57,7 @@ export default function HealthHistoryPage() {
             </select>
          </div>
          <HealthTrendChart 
-            data={history.filter(h => h.metric === (filterMetric === 'ALL' ? 'heart_rate' : filterMetric))}
+            data={history.filter(h => h.metric === (filterMetric === 'ALL' ? 'heart_rate' : filterMetric)).reverse()}
             metric={filterMetric === 'ALL' ? 'heart_rate' : filterMetric}
             color={filterMetric === 'spo2' ? '#0ea5e9' : filterMetric === 'temperature' ? '#f59e0b' : '#ef4444'}
          />
@@ -80,12 +87,12 @@ export default function HealthHistoryPage() {
                </thead>
                <tbody>
                   {filteredHistory.map(reading => {
-                     const config = METRIC_CONFIGS[reading.metric];
+                     const config = METRIC_CONFIGS[reading.metric as any];
                      const status = getHealthStatus(reading.metric, reading.value);
                      return (
                         <tr key={reading.id}>
                            <td className="whitespace-nowrap">{formatTimestamp(reading.timestamp)}</td>
-                           <td className="font-medium">{config?.label}</td>
+                           <td className="font-medium">{config?.label ?? reading.metric}</td>
                            <td className="font-mono">{formatValue(reading.metric, reading.value)}</td>
                            <td className="text-xs" style={{ color: 'var(--muted-fg)' }}>{config?.unit}</td>
                            <td>
@@ -100,7 +107,7 @@ export default function HealthHistoryPage() {
                   {filteredHistory.length === 0 && (
                      <tr>
                         <td colSpan={6} className="text-center py-8" style={{ color: 'var(--muted-fg)' }}>
-                           No readings found.
+                           No readings found. Waiting for hardware data.
                         </td>
                      </tr>
                   )}

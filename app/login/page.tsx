@@ -38,6 +38,7 @@ export default function LoginPage() {
       toast({ title: 'Welcome back!', variant: 'success' });
       router.replace('/dashboard');
     } catch (err: unknown) {
+      console.error('Login Error:', err);
       const msg = getFirebaseErrorMessage(err);
       setError(msg);
     } finally {

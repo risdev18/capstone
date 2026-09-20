@@ -1,16 +1,19 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth/context';
+import { db } from '@/lib/firebase/client';
+import { collection, query, where, onSnapshot, orderBy, limit } from 'firebase/firestore';
 import { METRIC_CONFIGS, type HealthReading, type HealthStatus } from '@/types/health';
-import { DEMO_DEVICE, DEMO_SENSORS, tickLiveReadings, generateDemoHistory, generateDemoAlerts, type DemoScenario } from '@/lib/simulator/demoData';
 import { getHealthStatus, getStatusColor, getStatusBg, formatRelativeTime, isDeviceOnline, formatValue } from '@/lib/utils/health';
 import type { Alert } from '@/types/alert';
+import type { Device } from '@/types/device';
+import type { MedicationEvent } from '@/types/medication';
 import Link from 'next/link';
 import {
   Heart, Droplets, Thermometer, Activity, Wifi, WifiOff,
   Battery, AlertTriangle, AlertCircle, Info, Clock, ChevronRight,
-  RefreshCw, PlayCircle, Shield
+  Shield, CheckCircle2
 } from 'lucide-react';
 import { HealthTrendChart } from '@/components/charts/HealthTrendChart';
 
@@ -32,71 +35,67 @@ function getGreeting(): string {
 
 export default function DashboardPage() {
   const { profile } = useAuth();
-  const [scenario, setScenario] = useState<DemoScenario>('normal');
+  
+  const [device, setDevice] = useState<Device | null>(null);
   const [readings, setReadings] = useState<Partial<Record<Metric, HealthReading>>>({});
   const [history, setHistory] = useState<HealthReading[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [lastSync, setLastSync] = useState<Date>(new Date());
-  const [device, setDevice] = useState(DEMO_DEVICE);
-
-  const refresh = useCallback(() => {
-    const userId = profile?.uid ?? 'demo-user';
-    const live = tickLiveReadings(userId, scenario) as HealthReading[];
-    const map: Partial<Record<Metric, HealthReading>> = {};
-    for (const r of live) {
-      if (r.metric === 'heart_rate' || r.metric === 'spo2' || r.metric === 'temperature' || r.metric === 'blood_pressure_systolic') {
-        map[r.metric as Metric] = r;
-      }
-    }
-    setReadings(map);
-    setHistory(generateDemoHistory(userId, 24, scenario));
-    setAlerts(generateDemoAlerts(userId, scenario));
-    setLastSync(new Date());
-    setDevice((d) => ({
-      ...d,
-      status: scenario === 'offline' ? 'OFFLINE' : 'ONLINE',
-      lastSeen: new Date().toISOString(),
-      batteryLevel: scenario === 'offline' ? d.batteryLevel : Math.min(100, d.batteryLevel + 0.1),
-    }));
-  }, [profile?.uid, scenario]);
+  const [medEvents, setMedEvents] = useState<MedicationEvent[]>([]);
 
   useEffect(() => {
-    refresh();
-    const interval = setInterval(refresh, 30_000);
-    return () => clearInterval(interval);
-  }, [refresh]);
+    if (!profile?.uid) return;
 
-  const isOnline = isDeviceOnline(device.lastSeen) && scenario !== 'offline';
-  const unacknowledgedAlerts = alerts.filter((a) => a.status === 'UNACKNOWLEDGED');
-  const criticalAlerts = alerts.filter((a) => a.severity === 'CRITICAL');
+    // 1. Fetch Primary Device
+    const qDevice = query(collection(db, 'devices'), where('ownerId', '==', profile.uid), limit(1));
+    const unsubDevice = onSnapshot(qDevice, (snap) => {
+      if (!snap.empty) {
+        setDevice(snap.docs[0].data() as Device);
+      } else {
+        setDevice(null);
+      }
+    });
+
+    // 2. Fetch Latest Readings History (for charts)
+    const qHistory = query(collection(db, 'readings'), where('userId', '==', profile.uid), orderBy('timestamp', 'desc'), limit(100));
+    const unsubHistory = onSnapshot(qHistory, (snap) => {
+      const docs = snap.docs.map(d => d.data() as HealthReading).reverse(); // Oldest to newest for charts
+      setHistory(docs);
+      
+      // Extract latest reading for each metric
+      const latest: Partial<Record<Metric, HealthReading>> = {};
+      const sortedNewest = [...docs].reverse();
+      for (const r of sortedNewest) {
+        if (!latest[r.metric as Metric]) {
+          latest[r.metric as Metric] = r;
+        }
+      }
+      setReadings(latest);
+    });
+
+    // 3. Fetch Alerts
+    const qAlerts = query(collection(db, 'alerts'), where('userId', '==', profile.uid), orderBy('createdAt', 'desc'), limit(5));
+    const unsubAlerts = onSnapshot(qAlerts, (snap) => {
+      setAlerts(snap.docs.map(d => d.data() as Alert));
+    });
+
+    // 4. Fetch Medication Events (Today's Schedule)
+    const qEvents = query(collection(db, 'medicationEvents'), where('userId', '==', profile.uid), orderBy('scheduledTime', 'desc'), limit(10));
+    const unsubEvents = onSnapshot(qEvents, (snap) => {
+      setMedEvents(snap.docs.map(d => d.data() as MedicationEvent));
+    });
+
+    return () => {
+      unsubDevice();
+      unsubHistory();
+      unsubAlerts();
+      unsubEvents();
+    };
+  }, [profile?.uid]);
+
+  const isOnline = device ? isDeviceOnline(device.lastSeen) && device.status === 'ONLINE' : false;
 
   return (
     <div className="space-y-6">
-      {/* ── Demo Banner ── */}
-      <div className="demo-banner rounded-xl">
-        <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-        <span className="font-semibold">DEMO MODE</span>
-        <span className="hidden sm:inline">— Readings are simulated and do not represent real sensor measurements.</span>
-        <div className="ml-auto flex items-center gap-2">
-          <span className="text-xs opacity-70 hidden sm:inline">Scenario:</span>
-          <select
-            className="text-xs rounded-lg px-2 py-1 font-medium cursor-pointer"
-            style={{ background: 'rgba(0,0,0,0.1)', border: 'none', color: 'inherit' }}
-            value={scenario}
-            onChange={(e) => setScenario(e.target.value as DemoScenario)}
-            aria-label="Demo scenario selector"
-          >
-            <option value="normal">Normal</option>
-            <option value="warning">Warning</option>
-            <option value="critical">Critical</option>
-            <option value="offline">Offline</option>
-          </select>
-          <button onClick={refresh} className="btn-ghost btn-icon" title="Refresh readings" aria-label="Refresh">
-            <RefreshCw className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      </div>
-
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -107,45 +106,88 @@ export default function DashboardPage() {
             Here&apos;s your health overview for today.
           </p>
         </div>
-        <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--muted-fg)' }}>
-          <Clock className="h-3.5 w-3.5" />
-          Last sync: {formatRelativeTime(lastSync.toISOString())}
-        </div>
       </div>
 
       {/* ── Device Status Bar ── */}
-      <div className={`card rounded-2xl p-4 flex flex-wrap items-center gap-4 ${isOnline ? '' : ''}`}>
-        <div className="flex items-center gap-3">
-          <div className={`${isOnline ? 'live-dot' : 'offline-dot'}`} />
-          <div>
-            <p className="text-sm font-semibold">{device.name}</p>
-            <p className="text-xs" style={{ color: 'var(--muted-fg)' }}>{device.deviceCode}</p>
+      {device ? (
+        <div className={`card rounded-2xl p-4 flex flex-wrap items-center gap-4 ${isOnline ? '' : ''}`}>
+          <div className="flex items-center gap-3">
+            <div className={`${isOnline ? 'live-dot' : 'offline-dot'}`} />
+            <div>
+              <p className="text-sm font-semibold">{device.name}</p>
+              <p className="text-xs" style={{ color: 'var(--muted-fg)' }}>{device.deviceCode}</p>
+            </div>
           </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-4 ml-auto text-sm">
-          <div className="flex items-center gap-1.5">
-            {isOnline ? <Wifi className="h-4 w-4 text-emerald-500" /> : <WifiOff className="h-4 w-4 text-red-400" />}
-            <span className={isOnline ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'} style={{ fontWeight: 500 }}>
-              {isOnline ? 'Online' : 'Offline'}
-            </span>
+          <div className="flex flex-wrap items-center gap-4 ml-auto text-sm">
+            <div className="flex items-center gap-1.5">
+              {isOnline ? <Wifi className="h-4 w-4 text-emerald-500" /> : <WifiOff className="h-4 w-4 text-red-400" />}
+              <span className={isOnline ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'} style={{ fontWeight: 500 }}>
+                {isOnline ? 'Online' : 'Offline'}
+              </span>
+            </div>
+            {isOnline && (
+              <>
+                <div className="flex items-center gap-1.5" style={{ color: 'var(--muted-fg)' }}>
+                  <Battery className="h-4 w-4" />
+                  <span>{device.batteryLevel?.toFixed(0) ?? '--'}%</span>
+                </div>
+                <span className="badge badge-normal">{device.firmwareVersion ?? 'v1.0'}</span>
+              </>
+            )}
+            <Link href="/devices" className="btn btn-ghost btn-sm gap-1">
+              Details <ChevronRight className="h-3.5 w-3.5" />
+            </Link>
           </div>
-          {isOnline && (
-            <>
-              <div className="flex items-center gap-1.5" style={{ color: 'var(--muted-fg)' }}>
-                <Battery className="h-4 w-4" />
-                <span>{device.batteryLevel.toFixed(0)}%</span>
-              </div>
-              <span className="badge badge-normal">{device.firmwareVersion}</span>
-            </>
+          {!isOnline && (
+            <p className="w-full text-sm text-amber-600 dark:text-amber-400 font-medium">
+              ⚠ Device may be offline or disconnected. Last seen: {formatRelativeTime(device.lastSeen)}
+            </p>
           )}
-          <Link href="/devices" className="btn btn-ghost btn-sm gap-1">
-            Details <ChevronRight className="h-3.5 w-3.5" />
+        </div>
+      ) : (
+        <div className="card rounded-2xl p-6 text-center">
+          <WifiOff className="h-8 w-8 text-red-400 mx-auto mb-2" />
+          <h2 className="text-base font-semibold">No Device Connected</h2>
+          <p className="text-sm text-[var(--muted-fg)] mt-1 mb-4">Please connect your SmartHealth Box hardware.</p>
+        </div>
+      )}
+
+      {/* ── Medicine Schedule & Next Dose ── */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-base font-semibold">Recent Medication Activity</h2>
+          <Link href="/medicines/box" className="btn btn-ghost btn-sm gap-1 text-xs">
+            View box <ChevronRight className="h-3.5 w-3.5" />
           </Link>
         </div>
-        {!isOnline && (
-          <p className="w-full text-sm text-amber-600 dark:text-amber-400 font-medium">
-            ⚠ Device may be offline or disconnected. Last seen: {formatRelativeTime(device.lastSeen)}
-          </p>
+        
+        {medEvents.length === 0 ? (
+          <div className="card rounded-2xl p-6 text-center">
+            <p className="text-sm font-medium" style={{ color: 'var(--muted-fg)' }}>No recent medication events.</p>
+          </div>
+        ) : (
+          <div className="card rounded-2xl p-5 flex flex-col justify-center space-y-4">
+            {medEvents.slice(0,3).map(event => (
+               <div key={event.id} className="flex items-center justify-between pb-3 border-b border-[var(--border)] last:border-0">
+                  <div className="flex items-center gap-3">
+                    {event.status === 'TAKEN' ? (
+                      <CheckCircle2 className="h-5 w-5 text-[var(--color-success)]" />
+                    ) : event.status === 'MISSED' ? (
+                      <AlertCircle className="h-5 w-5 text-[var(--color-critical)]" />
+                    ) : (
+                      <Clock className="h-5 w-5 text-[var(--color-accent)]" />
+                    )}
+                    <span className="font-medium">Compartment {event.compartmentId}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className={`text-sm font-medium ${event.status === 'TAKEN' ? 'text-[var(--color-success)]' : event.status === 'MISSED' ? 'text-[var(--color-critical)]' : 'text-[var(--color-accent)]'}`}>
+                      {event.status}
+                    </span>
+                    <p className="text-xs text-[var(--muted-fg)]">{formatRelativeTime(event.eventTime)}</p>
+                  </div>
+               </div>
+            ))}
+          </div>
         )}
       </div>
 
@@ -186,10 +228,10 @@ export default function DashboardPage() {
                 ) : (
                   <div className="mt-2">
                     <p className="text-base font-medium" style={{ color: 'var(--muted-fg)' }}>
-                      {scenario === 'offline' ? 'Sensor unavailable' : '—'}
+                      —
                     </p>
                     <p className="text-xs mt-1" style={{ color: 'var(--muted-fg)' }}>
-                      {scenario === 'offline' ? 'Device offline' : 'Awaiting data'}
+                      Awaiting data
                     </p>
                   </div>
                 )}
@@ -202,7 +244,7 @@ export default function DashboardPage() {
       {/* ── Trend Chart ── */}
       <div className="card rounded-2xl p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold">Heart Rate Trend (24h)</h2>
+          <h2 className="text-base font-semibold">Heart Rate Trend</h2>
           <Link href="/health" className="btn btn-ghost btn-sm gap-1 text-xs">
             View all <ChevronRight className="h-3.5 w-3.5" />
           </Link>
@@ -256,44 +298,6 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
-
-        {/* Sensor Status */}
-        <div className="card rounded-2xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-semibold">Sensor Status</h2>
-            <Link href="/devices" className="btn btn-ghost btn-sm gap-1 text-xs">
-              Details <ChevronRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
-          <div className="space-y-3">
-            {DEMO_SENSORS.map((sensor) => {
-              const connected = sensor.status === 'CONNECTED' && scenario !== 'offline';
-              return (
-                <div key={sensor.id} className="flex items-center justify-between rounded-xl p-3"
-                  style={{ background: 'var(--muted)' }}>
-                  <div>
-                    <p className="text-sm font-medium">{sensor.name}</p>
-                    <p className="text-xs" style={{ color: 'var(--muted-fg)' }}>{sensor.type} · {METRIC_CONFIGS[sensor.metric]?.label}</p>
-                  </div>
-                  <span className={`badge text-[10px] ${connected ? 'badge-normal' : 'badge-offline'}`}>
-                    {connected ? 'Connected' : 'Disconnected'}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* ── Medical Disclaimer ── */}
-      <div className="flex items-start gap-2.5 rounded-xl border px-4 py-3 text-xs"
-        style={{ background: 'var(--muted)', borderColor: 'var(--border)', color: 'var(--muted-fg)' }}>
-        <Info className="h-4 w-4 flex-shrink-0 mt-0.5" />
-        <p>
-          <strong>Medical Disclaimer:</strong> SmartHealth Box is an educational health-monitoring system and 
-          is not a substitute for professional medical advice, diagnosis, or treatment. All readings shown here 
-          are for monitoring and educational purposes only.
-        </p>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
 @import "tailwindcss";
 
 /* ─── Design Tokens ─────────────────────────────────────────────────────────── */
@@ -7,22 +7,23 @@
   --font-sans: "Inter", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", monospace;
 
-  /* Brand Colors — Healthcare Blue/Teal */
-  --color-primary: #0ea5e9;
+  /* Brand Colors — Mint Care */
+  --color-primary: #0f9d8a;
   --color-primary-foreground: #ffffff;
-  --color-primary-dark: #0284c7;
-  --color-primary-light: #e0f2fe;
+  --color-primary-dark: #0b7a6b;
+  --color-primary-light: #e6f5f2;
 
   /* Semantic colors */
-  --color-success: #10b981;
+  --color-success: #22a559;
   --color-success-foreground: #ffffff;
-  --color-success-light: #d1fae5;
-  --color-warning: #f59e0b;
+  --color-success-light: #d3f3df;
+  --color-warning: #f5b301;
   --color-warning-foreground: #ffffff;
-  --color-warning-light: #fef3c7;
-  --color-danger: #ef4444;
+  --color-warning-light: #fef0c7;
+  --color-danger: #e5484d;
   --color-danger-foreground: #ffffff;
-  --color-danger-light: #fee2e2;
+  --color-danger-light: #fbe5e5;
+  --color-accent: #ff8a5b;
 
   /* Surface / Background */
   --color-background: var(--bg);
@@ -33,41 +34,28 @@
   --color-muted-foreground: var(--muted-fg);
   --color-border: var(--border);
   --color-input: var(--input);
-  --color-ring: #0ea5e9;
+  --color-ring: #0f9d8a;
 
   /* Radius */
-  --radius: 0.75rem;
+  --radius: 1rem;
   --radius-sm: 0.5rem;
-  --radius-lg: 1rem;
+  --radius-lg: 1.25rem;
   --radius-xl: 1.5rem;
 }
 
 /* ─── Light Mode Variables ──────────────────────────────────────────────────── */
 :root {
-  --bg: #f8fafc;
-  --fg: #0f172a;
+  --bg: #f6fbf9;
+  --fg: #40615b;
   --card: #ffffff;
-  --card-fg: #0f172a;
-  --muted: #f1f5f9;
-  --muted-fg: #64748b;
-  --border: #e2e8f0;
+  --card-fg: #40615b;
+  --muted: #e6f5f2;
+  --muted-fg: #7c9a94;
+  --border: #e6f5f2;
   --input: #ffffff;
+  --heading: #0b2b26;
 
   color-scheme: light;
-}
-
-/* ─── Dark Mode Variables ───────────────────────────────────────────────────── */
-.dark {
-  --bg: #0a0f1e;
-  --fg: #e2e8f0;
-  --card: #111827;
-  --card-fg: #e2e8f0;
-  --muted: #1e293b;
-  --muted-fg: #94a3b8;
-  --border: #1e293b;
-  --input: #1e293b;
-
-  color-scheme: dark;
 }
 
 /* ─── Base Styles ───────────────────────────────────────────────────────────── */
@@ -87,6 +75,11 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  color: var(--heading);
 }
 
 /* ─── Scrollbar ─────────────────────────────────────────────────────────────── */
@@ -144,19 +137,12 @@ body {
   font-weight: 500;
   line-height: 1;
 }
-.badge-normal  { background: #d1fae5; color: #065f46; }
-.badge-warning { background: #fef3c7; color: #92400e; }
-.badge-critical { background: #fee2e2; color: #991b1b; }
-.badge-info    { background: #dbeafe; color: #1e40af; }
-.badge-offline { background: #f1f5f9; color: #475569; }
-.badge-online  { background: #d1fae5; color: #065f46; }
-
-.dark .badge-normal  { background: #064e3b; color: #6ee7b7; }
-.dark .badge-warning { background: #78350f; color: #fde68a; }
-.dark .badge-critical { background: #7f1d1d; color: #fca5a5; }
-.dark .badge-info    { background: #1e3a5f; color: #93c5fd; }
-.dark .badge-offline { background: #1e293b; color: #94a3b8; }
-.dark .badge-online  { background: #064e3b; color: #6ee7b7; }
+.badge-normal  { background: var(--color-success-light); color: var(--color-success); }
+.badge-warning { background: var(--color-warning-light); color: var(--color-warning); }
+.badge-critical { background: var(--color-danger-light); color: var(--color-danger); }
+.badge-info    { background: var(--color-primary-light); color: var(--color-primary-dark); }
+.badge-offline { background: var(--border); color: var(--muted-fg); }
+.badge-online  { background: var(--color-success-light); color: var(--color-success); }
 
 /* Live pulse indicator */
 .live-dot {
@@ -266,14 +252,14 @@ body {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #0ea5e9, #0284c7);
+  background: var(--color-primary);
   color: #fff;
-  border-color: #0284c7;
+  border-color: var(--color-primary);
 }
 .btn-primary:hover:not(:disabled) {
-  background: linear-gradient(135deg, #0284c7, #0369a1);
+  background: var(--color-primary-dark);
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(14, 165, 233, 0.4);
+  box-shadow: 0 4px 14px rgba(15, 157, 138, 0.4);
 }
 
 .btn-secondary {
@@ -299,9 +285,19 @@ body {
   color: #fff;
 }
 .btn-danger:hover:not(:disabled) {
-  background: #dc2626;
+  background: #c93d42;
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);
+  box-shadow: 0 4px 14px rgba(229, 72, 77, 0.4);
+}
+
+.btn-accent {
+  background: var(--color-accent);
+  color: #fff;
+}
+.btn-accent:hover:not(:disabled) {
+  background: #e6764a;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(255, 138, 91, 0.4);
 }
 
 .btn-ghost {

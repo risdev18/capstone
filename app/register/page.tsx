@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth/context';
 import { registerSchema } from '@/lib/validation/schemas';
 import { toast } from '@/components/ui/Toaster';
 import { Heart, Eye, EyeOff, AlertCircle, Loader2, ArrowLeft, CheckCircle } from 'lucide-react';
+import { z } from 'zod';
 
 type Step = 1 | 2;
 
@@ -43,8 +44,21 @@ export default function RegisterPage() {
   }
 
   function validateStep1() {
-    const partial = registerSchema.pick({ name: true, email: true, password: true, confirmPassword: true });
-    const result = partial.safeParse(form);
+    const step1Schema = z.object({
+      name: z.string().min(2, 'Name must be at least 2 characters').max(100),
+      email: z.string().email('Invalid email address'),
+      password: z
+        .string()
+        .min(8, 'Password must be at least 8 characters')
+        .regex(/[A-Z]/, 'Must contain at least one uppercase letter')
+        .regex(/[0-9]/, 'Must contain at least one number'),
+      confirmPassword: z.string(),
+    }).refine((data) => data.password === data.confirmPassword, {
+      message: 'Passwords do not match',
+      path: ['confirmPassword'],
+    });
+
+    const result = step1Schema.safeParse(form);
     if (!result.success) {
       const map: Record<string, string> = {};
       for (const issue of result.error.issues) {
