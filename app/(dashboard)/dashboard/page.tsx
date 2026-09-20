@@ -203,14 +203,14 @@ export default function DashboardPage() {
 
             return (
               <div key={metric} className={`card card-hover rounded-2xl p-5 border ${getStatusBg(status)}`}>
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex flex-col 2xl:flex-row 2xl:items-center justify-between gap-2 mb-3">
                   <div className="flex items-center gap-2">
-                    <Icon className={`h-4 w-4 ${getStatusColor(status)}`} />
-                    <span className="text-xs font-medium" style={{ color: 'var(--muted-fg)' }}>
+                    <Icon className={`h-4 w-4 flex-shrink-0 ${getStatusColor(status)}`} />
+                    <span className="text-xs font-medium leading-tight line-clamp-2" style={{ color: 'var(--muted-fg)' }}>
                       {config.label}
                     </span>
                   </div>
-                  <span className={`badge text-[10px] ${status === 'NORMAL' ? 'badge-normal' : status === 'WARNING' ? 'badge-warning' : status === 'CRITICAL' ? 'badge-critical' : 'badge-offline'}`}>
+                  <span className={`badge text-[10px] w-fit whitespace-nowrap ${status === 'NORMAL' ? 'badge-normal' : status === 'WARNING' ? 'badge-warning' : status === 'CRITICAL' ? 'badge-critical' : 'badge-offline'}`}>
                     {status}
                   </span>
                 </div>
