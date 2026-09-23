@@ -40,8 +40,8 @@
 
 // ── Configuration ─────────────────────────────────────────────────────────────
 
-const char* WIFI_SSID     = "YOUR_WIFI_SSID";
-const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
+const char* WIFI_SSID     = "vivo T4 5G";
+const char* WIFI_PASSWORD = "87654321";
 
 const char* SERVER_URL    = "https://capstone-yadr.vercel.app";
 const char* DEVICE_ID     = "SHB-0001";
@@ -49,22 +49,27 @@ const char* DEVICE_TOKEN  = "your-device-token";
 
 // ── Pin Definitions ───────────────────────────────────────────────────────────
 
-#define PIN_SERVO       13
-#define PIN_IR          34
-#define PIN_BUZZER      25
+#define SDA_PIN         21
+#define SCL_PIN         22
+#define PIN_SERVO       18
+#define PIN_IR          26
+#define PIN_BUZZER      27
 #define PIN_LED         2
-#define PIN_BTN_CONFIRM 32
-#define PIN_BTN_SKIP    33
-#define PIN_BTN_SOS     35
+#define PIN_BTN_CONFIRM 25
+#define PIN_BTN_SKIP    34 // Changed to avoid conflict
+#define PIN_BTN_SOS     35 // Changed to avoid conflict
 
-#define PIN_HX_DOUT     19
-#define PIN_HX_SCK      18
+#define PIN_HX_DOUT     32
+#define PIN_HX_SCK      33
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 #define LCD_I2C_ADDR    0x27
 #define SERVO_CLOSED_ANGLE  0
-#define SERVO_OPEN_ANGLE    90
+#define COMPARTMENT_1_ANGLE 10
+#define COMPARTMENT_2_ANGLE 40
+#define COMPARTMENT_3_ANGLE 70
+#define COMPARTMENT_4_ANGLE 100
 #define SERVO_OPEN_MS       1500
 
 #define TAKE_WINDOW_MS      30000
@@ -125,12 +130,15 @@ float currentSpO2 = 98.0;
 // ── Helper: LCD Display ───────────────────────────────────────────────────────
 
 void displayMessage(const char* line1, const char* line2 = "") {
+  char buf1[17]; char buf2[17];
+  strncpy(buf1, line1, 16); buf1[16] = '\0';
+  strncpy(buf2, line2, 16); buf2[16] = '\0';
   lcd.clear();
   lcd.setCursor(0, 0);
-  lcd.print(line1);
-  if (strlen(line2) > 0) {
+  lcd.print(buf1);
+  if (strlen(buf2) > 0) {
     lcd.setCursor(0, 1);
-    lcd.print(line2);
+    lcd.print(buf2);
   }
 }
 
@@ -138,18 +146,28 @@ void displayMessage(const char* line1, const char* line2 = "") {
 
 void beep(int times = 1, int durationMs = 200) {
   for (int i = 0; i < times; i++) {
-    digitalWrite(PIN_BUZZER, HIGH);
+    tone(PIN_BUZZER, 1000);
     delay(durationMs);
-    digitalWrite(PIN_BUZZER, LOW);
+    noTone(PIN_BUZZER);
     if (i < times - 1) delay(100);
   }
 }
 
 // ── Helper: Servo ─────────────────────────────────────────────────────────────
 
-void openCompartment() {
-  dispenserServo.write(SERVO_OPEN_ANGLE);
-  Serial.println("[SERVO] OPEN");
+void openCompartment(const char* compartmentId) {
+  int angle = SERVO_CLOSED_ANGLE;
+  if (strcmp(compartmentId, "C1") == 0) angle = COMPARTMENT_1_ANGLE;
+  else if (strcmp(compartmentId, "C2") == 0) angle = COMPARTMENT_2_ANGLE;
+  else if (strcmp(compartmentId, "C3") == 0) angle = COMPARTMENT_3_ANGLE;
+  else if (strcmp(compartmentId, "C4") == 0) angle = COMPARTMENT_4_ANGLE;
+  else {
+    Serial.println("[SERVO] Invalid Compartment!");
+    return;
+  }
+  dispenserServo.write(angle);
+  Serial.print("[SERVO] Moved to ");
+  Serial.println(compartmentId);
 }
 
 void closeCompartment() {
@@ -160,7 +178,7 @@ void closeCompartment() {
 // ── Helpers: Sensors ──────────────────────────────────────────────────────────
 
 bool isTabletDetectedIR() {
-  return digitalRead(PIN_IR) == LOW; // Active low
+  return digitalRead(PIN_IR) == LOW; // Active low: LOW = OBJECT DETECTED, HIGH = NO OBJECT
 }
 
 bool isTabletTakenWeight() {
@@ -180,10 +198,10 @@ void pollVitals() {
     lastBeat = millis();
     beatsPerMinute = 60 / (delta / 1000.0);
     if (beatsPerMinute < 255 && beatsPerMinute > 20) {
-      // Simulate SpO2 as SparkFun lib requires complex math for real SpO2
-      currentSpO2 = 96.0 + random(0, 4); 
       beatAvg = (beatAvg + beatsPerMinute) / 2;
       if(beatAvg == 0) beatAvg = beatsPerMinute;
+      // SpO2 calculation requires complex math not supported here accurately.
+      // We do NOT simulate fake SpO2.
     }
   }
 }
@@ -256,10 +274,12 @@ void sendHeartbeat() {
     hr["value"] = beatAvg;
     hr["unit"] = "BPM";
     
-    JsonObject spo2 = readings.add<JsonObject>();
-    spo2["metric"] = "spo2";
-    spo2["value"] = currentSpO2;
-    spo2["unit"] = "%";
+    
+    // Only send SpO2 if it was actually calculated (currently unsupported)
+    // JsonObject spo2 = readings.add<JsonObject>();
+    // spo2["metric"] = "spo2";
+    // spo2["value"] = currentSpO2;
+    // spo2["unit"] = "%";
     
     String vBody;
     serializeJson(vDoc, vBody);
@@ -370,7 +390,8 @@ void pollPendingCommands() {
     const char* type = cmd["type"] | "";
     if (strcmp(type, "DISPENSE") == 0) {
       displayMessage("Manual Dispense", "Opening...");
-      openCompartment(); beep(2); delay(SERVO_OPEN_MS); closeCompartment(); beep(1);
+      const char* compId = cmd["payload"]["compartmentId"] | "C1";
+      openCompartment(compId); beep(2); delay(SERVO_OPEN_MS); closeCompartment(); beep(1);
       
       HTTPClient ackHttp;
       ackHttp.begin(String(SERVER_URL) + "/api/dispenser/dispense?commandId=" + String(cmd["id"] | ""));
@@ -390,7 +411,7 @@ void startDispensing(int idx) {
   displayMessage(s.medicationName, "Time to take!");
   beep(3, 300);
   
-  openCompartment();
+  openCompartment(s.compartmentId);
   delay(SERVO_OPEN_MS);
   closeCompartment();
   
@@ -408,11 +429,16 @@ void startDispensing(int idx) {
 void handleWaitingTake() {
   ScheduleItem& s = schedule[activeScheduleIdx];
   
-  bool takenViaIR = !isTabletDetectedIR();
+  bool takenViaIR = isTabletDetectedIR();
   bool takenViaWeight = isTabletTakenWeight();
 
-  if (digitalRead(PIN_BTN_CONFIRM) == LOW || takenViaIR || takenViaWeight) {
-    delay(50);
+  // Debounce the physical button
+  static unsigned long lastBtnPress = 0;
+  bool btnPressed = (digitalRead(PIN_BTN_CONFIRM) == LOW);
+  
+  if (btnPressed && (millis() - lastBtnPress > 500)) {
+    lastBtnPress = millis();
+    // Confirmed via button
     reportEvent(activeScheduleIdx, "TAKEN", 1);
     s.firedToday = true;
     beep(1, 500);
@@ -421,6 +447,20 @@ void handleWaitingTake() {
     currentState = STATE_IDLE;
     activeScheduleIdx = -1;
     return;
+  }
+  
+  if (takenViaIR || takenViaWeight) {
+    delay(100); // Brief debounce for IR/Weight
+    if (isTabletDetectedIR() || isTabletTakenWeight()) {
+      reportEvent(activeScheduleIdx, "TAKEN", 1);
+      s.firedToday = true;
+      beep(1, 500);
+      displayMessage("Medicine Taken!", "Well done!");
+      delay(2000);
+      currentState = STATE_IDLE;
+      activeScheduleIdx = -1;
+      return;
+    }
   }
 
   if (digitalRead(PIN_BTN_SKIP) == LOW) {
@@ -467,7 +507,7 @@ void checkSOSButton() {
     if (digitalRead(PIN_BTN_SOS) == LOW) {
       displayMessage("SOS Dispense", "Opening...");
       beep(2);
-      openCompartment();
+      openCompartment("C1"); // Default to C1 for SOS
       delay(SERVO_OPEN_MS);
       closeCompartment();
       reportSOSEvent();
