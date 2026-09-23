@@ -58,6 +58,8 @@ interface SidebarProps {
   onClose?: () => void;
 }
 
+import { BrandLogo } from '@/components/brand/BrandLogo';
+
 export function Sidebar({ mobile, onClose }: SidebarProps) {
   const pathname = usePathname();
   const { profile } = useAuth();
@@ -70,21 +72,16 @@ export function Sidebar({ mobile, onClose }: SidebarProps) {
 
   return (
     <aside
-      className={cn(mobile ? 'w-72 min-h-screen bg-[var(--card)] border-r border-[var(--border)] flex flex-col shadow-xl' : 'sidebar flex flex-col')}
+      className={cn(mobile ? 'w-80 min-h-screen bg-[var(--card)] border-r border-[var(--border)] flex flex-col shadow-xl' : 'sidebar flex flex-col')}
       aria-label="Main navigation"
     >
       {/* Logo */}
-      <div className="flex h-16 items-center justify-between border-b px-4" style={{ borderColor: 'var(--border)' }}>
-        <Link href="/dashboard" className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg hero-gradient shadow-md shadow-sky-500/30">
-            <Heart className="h-4 w-4 text-white" />
-          </div>
-          <div>
-            <span className="block text-sm font-bold leading-none">MediBox</span>
-            <span className="block text-[10px] leading-none" style={{ color: 'var(--muted-fg)' }}>
-              {profile?.role ?? 'Loading…'}
-            </span>
-          </div>
+      <div className="flex h-20 items-center justify-between border-b px-5" style={{ borderColor: 'var(--border)' }}>
+        <Link href="/dashboard" className="flex items-center gap-2.5 w-full">
+          <BrandLogo size="md" variant="inline" />
+          <span className="badge badge-info text-[10px] font-bold py-0.5 px-2 ml-auto">
+            {profile?.role ?? 'USER'}
+          </span>
         </Link>
         {mobile && onClose && (
           <button

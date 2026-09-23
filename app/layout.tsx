@@ -22,6 +22,15 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: 'MediBox Team' }],
   robots: 'index, follow',
+  icons: {
+    icon: [
+      { url: '/brand/medibox-icon.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon.ico', sizes: 'any' },
+    ],
+    apple: [
+      { url: '/brand/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
+  },
 };
 
 export default function RootLayout({

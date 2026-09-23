@@ -14,13 +14,31 @@ export const registerSchema = z
     confirmPassword: z.string(),
     phone: z
       .string()
-      .regex(/^\+?[1-9]\d{9,14}$/, 'Invalid phone number')
+      .refine(
+        (val) => {
+          if (!val || val.trim() === '') return true;
+          const cleaned = val.replace(/[\s\-().]/g, '');
+          return /^[+]?[0-9]{7,15}$/.test(cleaned);
+        },
+        'Please enter a valid phone number (e.g. +91 95795 10192 or 10 digits)'
+      )
       .optional()
       .or(z.literal('')),
     dateOfBirth: z.string().optional(),
     gender: z.enum(['MALE', 'FEMALE', 'OTHER', 'PREFER_NOT_TO_SAY']).optional(),
     emergencyContactName: z.string().optional(),
-    emergencyContactPhone: z.string().optional(),
+    emergencyContactPhone: z
+      .string()
+      .refine(
+        (val) => {
+          if (!val || val.trim() === '') return true;
+          const cleaned = val.replace(/[\s\-().]/g, '');
+          return /^[+]?[0-9]{7,15}$/.test(cleaned);
+        },
+        'Please enter a valid emergency contact phone number'
+      )
+      .optional()
+      .or(z.literal('')),
     height: z.number().min(50).max(300).optional(),
     weight: z.number().min(1).max(500).optional(),
     bloodGroup: z.string().optional(),

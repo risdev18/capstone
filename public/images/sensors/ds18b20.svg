@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="100%" height="100%">
+  <defs>
+    <linearGradient id="metalGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#94a3b8" />
+      <stop offset="35%" stop-color="#f8fafc" />
+      <stop offset="70%" stop-color="#64748b" />
+      <stop offset="100%" stop-color="#334155" />
+    </linearGradient>
+    <linearGradient id="cableGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1e293b" />
+      <stop offset="50%" stop-color="#334155" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+    <linearGradient id="tempGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#06b6d4" />
+      <stop offset="50%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#f59e0b" />
+    </linearGradient>
+    <filter id="tempGlow">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Ambient Glow -->
+  <circle cx="160" cy="150" r="100" fill="#10b981" opacity="0.1" filter="url(#tempGlow)" />
+
+  <!-- Flexible Waterproof Cable -->
+  <path d="M 380 90 C 310 90, 290 140, 240 145 L 210 145" 
+        stroke="url(#cableGrad)" stroke-width="22" stroke-linecap="round" fill="none" />
+  
+  <!-- Heat-shrink Tubing Junction -->
+  <rect x="180" y="132" width="40" height="26" rx="4" fill="#0f172a" stroke="#1e293b" stroke-width="2" />
+  <rect x="188" y="135" width="24" height="20" rx="2" fill="#334155" />
+
+  <!-- Stainless Steel Probe Cylinder -->
+  <rect x="50" y="136" width="135" height="18" rx="9" fill="url(#metalGrad)" stroke="#475569" stroke-width="1.5" />
+  
+  <!-- Probe Tip -->
+  <path d="M 58 136 C 48 136, 45 145, 45 145 C 45 145, 48 154, 58 154 Z" fill="#e2e8f0" />
+
+  <!-- Digital Temperature Wave Indicator -->
+  <g transform="translate(240, 60)">
+    <rect x="0" y="0" width="120" height="140" rx="16" fill="#0f172a" stroke="#334155" stroke-width="2" />
+    <!-- Thermometer Bar -->
+    <rect x="25" y="25" width="12" height="90" rx="6" fill="#1e293b" />
+    <rect x="25" y="55" width="12" height="60" rx="6" fill="url(#tempGrad)" filter="url(#tempGlow)" />
+    <circle cx="31" cy="115" r="12" fill="#f59e0b" filter="url(#tempGlow)" />
+    
+    <!-- Values -->
+    <text x="54" y="45" font-family="'Plus Jakarta Sans', sans-serif" font-size="11" font-weight="700" fill="#94a3b8">TEMP</text>
+    <text x="54" y="75" font-family="'Plus Jakarta Sans', sans-serif" font-size="22" font-weight="800" fill="#f8fafc">36.8°</text>
+    <text x="54" y="95" font-family="monospace" font-size="10" fill="#10b981">±0.1°C RES</text>
+    <text x="54" y="112" font-family="monospace" font-size="9" fill="#64748b">DS18B20 1-Wire</text>
+  </g>
+
+  <!-- Spec Label -->
+  <g transform="translate(60, 200)">
+    <rect x="0" y="0" width="160" height="42" rx="8" fill="#1e293b" opacity="0.9" stroke="#334155" />
+    <text x="14" y="20" font-family="'Plus Jakarta Sans', sans-serif" font-size="12" font-weight="700" fill="#f8fafc">DS18B20 Probe</text>
+    <text x="14" y="34" font-family="monospace" font-size="9" fill="#06b6d4">WATERPROOF STAINLESS STEEL</text>
+  </g>
+</svg>

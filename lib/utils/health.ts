@@ -27,10 +27,10 @@ export function getStatusColor(status: HealthStatus): string {
 
 export function getStatusBg(status: HealthStatus): string {
   switch (status) {
-    case 'NORMAL': return 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950 dark:border-emerald-800';
-    case 'WARNING': return 'bg-amber-50 border-amber-200 dark:bg-amber-950 dark:border-amber-800';
-    case 'CRITICAL': return 'bg-red-50 border-red-200 dark:bg-red-950 dark:border-red-800';
-    default: return 'bg-muted border-border';
+    case 'NORMAL': return 'bg-emerald-500/5 border-emerald-500/25';
+    case 'WARNING': return 'bg-amber-500/5 border-amber-500/25';
+    case 'CRITICAL': return 'bg-red-500/5 border-red-500/25';
+    default: return 'bg-[var(--card)] border-[var(--border)]';
   }
 }
 

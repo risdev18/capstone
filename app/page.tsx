@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import React from 'react';
 import {
   Heart,
   Activity,
   Thermometer,
   Droplets,
-  Wifi,
   Shield,
   BarChart3,
   Bell,
@@ -20,368 +20,301 @@ import {
   Users,
   FileText,
   ArrowRight,
+  Sparkles,
+  Box,
+  Key,
 } from 'lucide-react';
+import { BrandLogo } from '@/components/brand/BrandLogo';
+import { ParallaxHero } from '@/components/landing/ParallaxHero';
+import { InteractivePipeline } from '@/components/landing/InteractivePipeline';
 
 export const metadata: Metadata = {
-  title: 'MediBox — Connected Health Monitoring Platform',
+  title: 'MediBox — Intelligent Health Monitoring & Smart Pillbox Platform',
   description:
-    'An educational IoT health monitoring platform with real-time sensor data, intelligent alerts, and care tracking. Built with ESP32, Next.js, and Firebase.',
+    'Connected IoT health monitoring and automated medication dispensing platform. Real-time MAX30102 and DS18B20 sensor streams, intelligent clinical alerts, and 15-slot smart pillbox adherence.',
 };
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
+// ─── Key Capabilities Data ───────────────────────────────────────────────────
 
-const features = [
+const capabilities = [
   {
     icon: Activity,
-    title: 'Real-Time Monitoring',
-    desc: 'Live readings from connected sensors streamed directly to your dashboard.',
-    color: 'text-sky-500',
-    bg: 'bg-sky-50 dark:bg-sky-950',
+    title: 'Continuous Biometric Streams',
+    desc: 'Real-time arterial photoplethysmography (SpO₂ & Heart Rate) via MAX30102 with live wave monitoring and 100Hz edge telemetry.',
+    color: 'text-rose-500',
+    bg: 'bg-rose-500/10',
+    border: 'border-rose-500/20 hover:border-rose-500/40',
+    tag: 'MAX30102',
   },
   {
-    icon: BarChart3,
-    title: 'Trend Analytics',
-    desc: 'Interactive charts showing health trends across 24 hours, 7 days, or 30 days.',
-    color: 'text-indigo-500',
-    bg: 'bg-indigo-50 dark:bg-indigo-950',
+    icon: Thermometer,
+    title: 'Clinical Thermometry',
+    desc: 'Stainless steel DS18B20 digital temperature probe calibrated to ±0.1°C precision for early low-grade fever detection.',
+    color: 'text-amber-500',
+    bg: 'bg-amber-500/10',
+    border: 'border-amber-500/20 hover:border-amber-500/40',
+    tag: 'DS18B20',
+  },
+  {
+    icon: Box,
+    title: '15-Compartment Smart Pillbox',
+    desc: 'HX711 precision load cell strain gauges detect exact pill weights and lid openings, recording timestamps and verifying adherence.',
+    color: 'text-blue-500',
+    bg: 'bg-blue-500/10',
+    border: 'border-blue-500/20 hover:border-blue-500/40',
+    tag: 'HX711 Matrix',
   },
   {
     icon: Bell,
-    title: 'Intelligent Alerts',
-    desc: 'Configurable threshold monitoring with INFO, WARNING, and CRITICAL severity levels.',
-    color: 'text-amber-500',
-    bg: 'bg-amber-50 dark:bg-amber-950',
+    title: 'Intelligent Alert Dispatch',
+    desc: 'Multi-severity clinical alerts (INFO, WARNING, CRITICAL) trigger instantly when readings cross safe physiological thresholds.',
+    color: 'text-cyan-500',
+    bg: 'bg-cyan-500/10',
+    border: 'border-cyan-500/20 hover:border-cyan-500/40',
+    tag: 'Sub-second',
   },
   {
-    icon: Cpu,
-    title: 'Device Management',
-    desc: 'Monitor MediBox status, battery, Wi-Fi signal, and sensor health.',
-    color: 'text-emerald-500',
-    bg: 'bg-emerald-50 dark:bg-emerald-950',
+    icon: BarChart3,
+    title: '24-Hour & 7-Day Trend Curves',
+    desc: 'Interactive time-series analytics reveal circadian fluctuations, resting vitals, and medication response patterns.',
+    color: 'text-indigo-500',
+    bg: 'bg-indigo-500/10',
+    border: 'border-indigo-500/20 hover:border-indigo-500/40',
+    tag: 'Interactive',
   },
   {
     icon: FileText,
-    title: 'Health Reports',
-    desc: 'Generate detailed monitoring reports with statistics and trend charts.',
+    title: 'Clinical Summary Reports',
+    desc: 'Generate printable physician-ready health reports with automated statistics (Min, Max, Avg, Alert counts) on demand.',
     color: 'text-purple-500',
-    bg: 'bg-purple-50 dark:bg-purple-950',
+    bg: 'bg-purple-500/10',
+    border: 'border-purple-500/20 hover:border-purple-500/40',
+    tag: 'PDF Ready',
   },
   {
     icon: Shield,
-    title: 'Role-Based Security',
-    desc: 'Four-tier RBAC with Firebase Auth, Firestore rules, and server-side validation.',
-    color: 'text-red-500',
-    bg: 'bg-red-50 dark:bg-red-950',
+    title: 'Enterprise 4-Tier RBAC',
+    desc: 'Granular role-based security protecting patient privacy across Patients, Family Caretakers, Admins, and Super Admins.',
+    color: 'text-emerald-500',
+    bg: 'bg-emerald-500/10',
+    border: 'border-emerald-500/20 hover:border-emerald-500/40',
+    tag: 'Firestore Rules',
   },
   {
-    icon: Users,
-    title: 'Multi-User Support',
-    desc: 'Patients, Caretakers, Admins, and Super Admins with proper authorization.',
+    icon: Sparkles,
+    title: 'Full Hardware Simulator',
+    desc: 'Built-in realistic simulation engine allowing seamless demonstration across all pages before physical hardware is linked.',
     color: 'text-teal-500',
-    bg: 'bg-teal-50 dark:bg-teal-950',
+    bg: 'bg-teal-500/10',
+    border: 'border-teal-500/20 hover:border-teal-500/40',
+    tag: 'Live Demo',
   },
-  {
-    icon: Smartphone,
-    title: 'Responsive Design',
-    desc: 'Fully responsive dashboard that works on desktop, tablet, and mobile.',
-    color: 'text-pink-500',
-    bg: 'bg-pink-50 dark:bg-pink-950',
-  },
-];
-
-const metrics = [
-  { icon: Heart, label: 'Heart Rate', unit: 'BPM', color: 'text-red-500', sample: '72' },
-  { icon: Droplets, label: 'SpO₂', unit: '%', color: 'text-sky-500', sample: '98' },
-  { icon: Thermometer, label: 'Temperature', unit: '°C', color: 'text-amber-500', sample: '36.7' },
-  { icon: Activity, label: 'Blood Pressure', unit: 'mmHg', color: 'text-purple-500', sample: '120/80' },
-];
-
-const architectureSteps = [
-  { icon: Cpu, label: 'Sensors', sub: 'MAX30102 · DS18B20', color: '#0ea5e9' },
-  { icon: Wifi, label: 'ESP32', sub: 'Wi-Fi · REST API', color: '#6366f1' },
-  { icon: Lock, label: 'Secure API', sub: 'Validated · Authenticated', color: '#8b5cf6' },
-  { icon: Database, label: 'Firebase', sub: 'Firestore · Auth', color: '#10b981' },
-  { icon: Zap, label: 'Processing', sub: 'Alert Engine · Analytics', color: '#f59e0b' },
-  { icon: BarChart3, label: 'Dashboard', sub: 'Real-time · Charts', color: '#ef4444' },
 ];
 
 const roles = [
-  { role: 'USER', desc: 'View own health readings, acknowledge alerts, generate reports', color: 'badge-info' },
-  { role: 'CARETAKER', desc: 'Monitor assigned patients, view their readings and alerts', color: 'badge-normal' },
-  { role: 'ADMIN', desc: 'Manage users, devices, sensors, and alert thresholds', color: 'badge-warning' },
-  { role: 'SUPER_ADMIN', desc: 'Full system access including role assignment and system settings', color: 'badge-critical' },
+  {
+    role: 'PATIENT (USER)',
+    badge: 'badge-info',
+    desc: 'View personal live vitals, 24h history, daily pill schedules, and acknowledge caregiver alerts.',
+    features: ['Personal Dashboard', 'Pillbox Intake Confirmations', 'Report Generation'],
+  },
+  {
+    role: 'CARETAKER',
+    badge: 'badge-normal',
+    desc: 'Monitor assigned family members or patients remotely with immediate alert dispatch notifications.',
+    features: ['Multi-Patient Oversight', 'Missed Dose Notifications', 'Threshold Visibility'],
+  },
+  {
+    role: 'ADMIN',
+    badge: 'badge-warning',
+    desc: 'Manage physical IoT devices, assign hardware tokens, configure alert thresholds, and audit user logs.',
+    features: ['Hardware Provisioning', 'Threshold Calibration', 'Sensor Health Diagnostics'],
+  },
+  {
+    role: 'SUPER ADMIN',
+    badge: 'badge-critical',
+    desc: 'Comprehensive system administration, database security audit logging, and global role privileges.',
+    features: ['System-wide Configuration', 'Security Governance', 'Master Telemetry Auditing'],
+  },
 ];
-
-// ─── Landing Page ─────────────────────────────────────────────────────────────
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen" style={{ background: 'var(--bg)', color: 'var(--fg)' }}>
-      {/* ── Navigation ── */}
-      <nav className="sticky top-0 z-50 border-b" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--fg)] selection:bg-blue-500 selection:text-white">
+      {/* ── Sticky Navigation Bar ── */}
+      <nav className="sticky top-0 z-50 border-b border-[var(--border)] glass-panel backdrop-blur-md shadow-sm">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between">
-            {/* Logo */}
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl hero-gradient shadow-lg shadow-sky-500/20">
-                <Heart className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <span className="block text-sm font-bold leading-none">MediBox</span>
-                <span className="block text-[10px] leading-none" style={{ color: 'var(--muted-fg)' }}>
-                  v1.0 · Capstone
-                </span>
-              </div>
-            </div>
+          <div className="flex h-20 sm:h-24 items-center justify-between">
+            {/* Official Brand Logo */}
+            <BrandLogo size="lg" variant="inline" showTagline={true} href="/" />
 
             {/* Nav links */}
-            <div className="hidden items-center gap-6 md:flex">
+            <div className="hidden md:flex items-center gap-8">
               {['Features', 'Architecture', 'Security', 'About'].map((item) => (
                 <a
                   key={item}
                   href={`#${item.toLowerCase()}`}
-                  className="text-sm font-medium transition-colors hover:text-sky-500"
-                  style={{ color: 'var(--muted-fg)' }}
+                  className="text-sm font-semibold text-[var(--muted-fg)] hover:text-blue-600 dark:hover:text-cyan-400 transition-colors"
                 >
                   {item}
                 </a>
               ))}
             </div>
 
-            {/* CTA */}
+            {/* CTA Buttons */}
             <div className="flex items-center gap-3">
-              <Link href="/login" className="btn btn-ghost btn-sm">
+              <Link
+                href="/login"
+                className="btn btn-ghost btn-sm font-semibold text-[var(--heading)] hover:text-blue-600"
+              >
                 Sign In
               </Link>
-              <Link href="/register" className="btn btn-primary btn-sm">
+              <Link
+                href="/register"
+                className="btn btn-primary btn-sm font-semibold shadow-md shadow-blue-500/20"
+              >
                 Get Started
-                <ArrowRight className="h-3.5 w-3.5" />
+                <ArrowRight className="h-3.5 w-3.5 ml-0.5" />
               </Link>
             </div>
           </div>
         </div>
       </nav>
 
-      {/* ── Hero ── */}
-      <section className="relative overflow-hidden px-4 py-24 sm:py-32">
-        {/* Background blobs */}
-        <div
-          className="pointer-events-none absolute -top-40 -right-40 h-[600px] w-[600px] rounded-full opacity-10"
-          style={{ background: 'radial-gradient(circle, #0ea5e9, transparent)' }}
-        />
-        <div
-          className="pointer-events-none absolute -bottom-20 -left-20 h-[400px] w-[400px] rounded-full opacity-10"
-          style={{ background: 'radial-gradient(circle, #6366f1, transparent)' }}
-        />
+      {/* ── Parallax Hero Section ── */}
+      <ParallaxHero />
 
-        <div className="relative mx-auto max-w-7xl">
-          <div className="grid items-center gap-16 lg:grid-cols-2">
-            {/* Text */}
-            <div className="animate-fade-in">
-              <div className="mb-6 inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-medium"
-                style={{ borderColor: 'rgba(14,165,233,0.3)', color: '#0ea5e9', background: 'rgba(14,165,233,0.08)' }}>
-                <span className="live-dot" />
-                Academic Capstone Project · IoT + Healthcare
-              </div>
+      {/* ── Interactive Architecture Pipeline ── */}
+      <InteractivePipeline />
 
-              <h1 className="mb-6 text-5xl font-extrabold leading-tight tracking-tight sm:text-6xl">
-                <span className="gradient-text">MediBox</span>
-                <br />
-                <span>Box</span>
-              </h1>
-
-              <p className="mb-8 text-xl leading-relaxed" style={{ color: 'var(--muted-fg)' }}>
-                Connected health monitoring, intelligent tracking, and real-time care insights — 
-                powered by ESP32 sensors and cloud analytics.
-              </p>
-
-              <div className="flex flex-wrap items-center gap-4">
-                <Link href="/register" className="btn btn-primary btn-lg">
-                  Get Started
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-                <Link href="/login" className="btn btn-outline btn-lg">
-                  View Demo Dashboard
-                </Link>
-              </div>
-
-              <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm" style={{ color: 'var(--muted-fg)' }}>
-                {['Firebase Auth', 'Real-time Firestore', 'ESP32 Ready', 'Role-Based Access'].map((t) => (
-                  <div key={t} className="flex items-center gap-1.5">
-                    <CheckCircle className="h-4 w-4 text-emerald-500" />
-                    {t}
-                  </div>
-                ))}
-              </div>
+      {/* ── Key Capabilities Section ── */}
+      <section id="features" className="px-4 py-24 sm:py-32">
+        <div className="mx-auto max-w-7xl">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-semibold mb-4">
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>Full Health-Tech Ecosystem</span>
             </div>
+            <h2 className="text-3xl sm:text-5xl font-extrabold text-[var(--heading)] tracking-tight">
+              Clinical Power Meets IoT Intelligence
+            </h2>
+            <p className="mt-4 text-base sm:text-lg text-[var(--muted-fg)] leading-relaxed">
+              Every component of MediBox is designed for reliability, immediate clinical visibility,
+              and patient medication compliance.
+            </p>
+          </div>
 
-            {/* Dashboard mockup */}
-            <div className="animate-float">
-              <div className="card rounded-2xl p-6 shadow-2xl shadow-sky-500/10">
-                {/* Mock header */}
-                <div className="mb-6 flex items-center justify-between">
-                  <div>
-                    <p className="text-xs" style={{ color: 'var(--muted-fg)' }}>Good morning</p>
-                    <p className="text-base font-semibold">Health Overview</p>
-                  </div>
-                  <div className="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium"
-                    style={{ background: '#d1fae5', color: '#065f46' }}>
-                    <span className="live-dot" style={{ width: 6, height: 6 }} />
-                    Online
-                  </div>
-                </div>
-
-                {/* Metric cards */}
-                <div className="grid grid-cols-2 gap-3 mb-4">
-                  {metrics.map((m) => (
-                    <div
-                      key={m.label}
-                      className="card-hover card rounded-xl p-4"
-                      style={{ background: 'var(--muted)' }}
-                    >
-                      <div className="flex items-center gap-2 mb-2">
-                        <m.icon className={`h-4 w-4 ${m.color}`} />
-                        <span className="text-xs font-medium" style={{ color: 'var(--muted-fg)' }}>
-                          {m.label}
-                        </span>
-                      </div>
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-2xl font-bold">{m.sample}</span>
-                        <span className="text-xs" style={{ color: 'var(--muted-fg)' }}>{m.unit}</span>
-                      </div>
-                      <span className="badge badge-normal mt-2" style={{ fontSize: '10px' }}>Normal</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {capabilities.map((c) => (
+              <div
+                key={c.title}
+                className={`card card-hover p-6 rounded-2xl border ${c.border} flex flex-col justify-between`}
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-5">
+                    <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${c.bg}`}>
+                      <c.icon className={`h-6 w-6 ${c.color}`} />
                     </div>
-                  ))}
-                </div>
-
-                {/* Demo banner */}
-                <div className="demo-banner rounded-lg">
-                  <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
-                  Demo Mode — readings are simulated
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Metrics section ── */}
-      <section className="border-y px-4 py-16" style={{ borderColor: 'var(--border)', background: 'var(--card)' }}>
-        <div className="mx-auto max-w-7xl">
-          <div className="mb-12 text-center">
-            <h2 className="text-3xl font-bold mb-3">What is MediBox?</h2>
-            <p className="text-lg max-w-2xl mx-auto" style={{ color: 'var(--muted-fg)' }}>
-              A connected IoT device that collects health readings from supported sensors 
-              and streams them to a secure, real-time web dashboard.
-            </p>
-          </div>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            {metrics.map((m) => (
-              <div key={m.label} className="card card-hover rounded-2xl p-6 text-center">
-                <div className={`mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl`}
-                  style={{ background: 'var(--muted)' }}>
-                  <m.icon className={`h-6 w-6 ${m.color}`} />
-                </div>
-                <p className="font-semibold text-base">{m.label}</p>
-                <p className="text-sm mt-1" style={{ color: 'var(--muted-fg)' }}>Measured in {m.unit}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── How it works ── */}
-      <section id="architecture" className="px-4 py-20">
-        <div className="mx-auto max-w-7xl">
-          <div className="mb-12 text-center">
-            <h2 className="text-3xl font-bold mb-3">How It Works</h2>
-            <p className="text-lg" style={{ color: 'var(--muted-fg)' }}>
-              From physical sensors to your web dashboard — a complete data pipeline.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            {architectureSteps.map((step, i) => (
-              <React.Fragment key={step.label}>
-                <div className="card card-hover rounded-2xl p-6 text-center w-36">
-                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl"
-                    style={{ background: `${step.color}20` }}>
-                    <step.icon className="h-6 w-6" style={{ color: step.color }} />
+                    <span className="badge badge-info text-[10px] font-mono font-bold">
+                      {c.tag}
+                    </span>
                   </div>
-                  <p className="font-semibold text-sm">{step.label}</p>
-                  <p className="text-xs mt-1 leading-tight" style={{ color: 'var(--muted-fg)' }}>{step.sub}</p>
+                  <h3 className="text-lg font-bold text-[var(--heading)] mb-2.5">
+                    {c.title}
+                  </h3>
+                  <p className="text-sm text-[var(--muted-fg)] leading-relaxed">
+                    {c.desc}
+                  </p>
                 </div>
-                {i < architectureSteps.length - 1 && (
-                  <ChevronRight className="h-5 w-5 flex-shrink-0" style={{ color: 'var(--muted-fg)' }} />
-                )}
-              </React.Fragment>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Features ── */}
-      <section id="features" className="px-4 py-20" style={{ background: 'var(--card)' }}>
-        <div className="mx-auto max-w-7xl">
-          <div className="mb-12 text-center">
-            <h2 className="text-3xl font-bold mb-3">Key Capabilities</h2>
-            <p className="text-lg" style={{ color: 'var(--muted-fg)' }}>
-              Everything needed for a complete health monitoring platform.
-            </p>
-          </div>
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {features.map((f) => (
-              <div key={f.title} className="card card-hover rounded-2xl p-6">
-                <div className={`mb-4 flex h-11 w-11 items-center justify-center rounded-xl ${f.bg}`}>
-                  <f.icon className={`h-5 w-5 ${f.color}`} />
-                </div>
-                <h3 className="font-semibold mb-2">{f.title}</h3>
-                <p className="text-sm leading-relaxed" style={{ color: 'var(--muted-fg)' }}>{f.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── Security & Roles ── */}
-      <section id="security" className="px-4 py-20">
+      {/* ── Security & 4-Tier RBAC ── */}
+      <section id="security" className="px-4 py-24 sm:py-32 border-t border-[var(--border)] bg-[var(--card)]">
         <div className="mx-auto max-w-7xl">
-          <div className="grid gap-12 lg:grid-cols-2 items-center">
-            <div>
-              <h2 className="text-3xl font-bold mb-4">Role-Based Access Control</h2>
-              <p className="text-lg mb-8" style={{ color: 'var(--muted-fg)' }}>
-                Four-tier authorization enforced server-side via Firebase Auth and 
-                Firestore Security Rules — never dependent on UI alone.
-              </p>
-              <div className="space-y-3">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            {/* Left: Role Cards */}
+            <div className="lg:col-span-6 space-y-6">
+              <div>
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-semibold mb-4">
+                  <Shield className="h-3.5 w-3.5" />
+                  <span>Role-Based Governance</span>
+                </div>
+                <h2 className="text-3xl sm:text-4xl font-extrabold text-[var(--heading)] tracking-tight">
+                  Granular 4-Tier Security Matrix
+                </h2>
+                <p className="mt-3 text-base text-[var(--muted-fg)] leading-relaxed">
+                  Enforced at the database and API layer via Firestore Security Rules and server-side token validation.
+                </p>
+              </div>
+
+              <div className="space-y-4">
                 {roles.map((r) => (
-                  <div key={r.role} className="card rounded-xl p-4 flex items-start gap-4">
-                    <span className={`badge ${r.color} flex-shrink-0 mt-0.5`}>{r.role}</span>
-                    <p className="text-sm" style={{ color: 'var(--muted-fg)' }}>{r.desc}</p>
+                  <div
+                    key={r.role}
+                    className="card p-5 rounded-2xl border hover:border-blue-500/30 transition-all"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-bold text-sm text-[var(--heading)]">{r.role}</h4>
+                      <span className={`badge ${r.badge} text-[10px]`}>Active Role</span>
+                    </div>
+                    <p className="text-xs text-[var(--muted-fg)] mb-3 leading-relaxed">{r.desc}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {r.features.map((f) => (
+                        <span key={f} className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-[var(--muted)] text-[var(--fg)]">
+                          ✓ {f}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
-            <div className="card rounded-2xl p-8">
+
+            {/* Right: Security Safeguards Panel */}
+            <div className="lg:col-span-6 card p-8 sm:p-10 rounded-3xl border border-sky-500/20 bg-gradient-to-br from-sky-500/5 via-blue-500/5 to-transparent shadow-xl">
               <div className="flex items-center gap-3 mb-6">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-50 dark:bg-sky-950">
-                  <Shield className="h-5 w-5 text-sky-500" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600/10 text-blue-600 dark:text-blue-400">
+                  <Lock className="h-6 w-6" />
                 </div>
-                <h3 className="font-semibold text-lg">Security Architecture</h3>
+                <div>
+                  <h3 className="text-xl font-bold text-[var(--heading)]">Data Safety Architecture</h3>
+                  <p className="text-xs text-[var(--muted-fg)]">Zero Trust Hardware-to-Cloud Channel</p>
+                </div>
               </div>
-              <ul className="space-y-3">
+
+              <ul className="space-y-4">
                 {[
-                  'Firebase Authentication — no passwords stored manually',
-                  'Firestore Security Rules — enforced at database level',
-                  'Server-side validation with Zod schemas',
-                  'Device token authentication for IoT ingestion',
-                  'Audit logs for all admin actions',
-                  'Environment variables — secrets never in frontend',
-                  'Input sanitization and rate limiting',
+                  {
+                    title: 'Firebase Authentication',
+                    desc: 'Cryptographically hashed authentication tokens; passwords never stored or logged in plain text.',
+                  },
+                  {
+                    title: 'Database-Level Firestore Rules',
+                    desc: 'Patients only query their assigned records. Cross-account data leaks blocked at engine level.',
+                  },
+                  {
+                    title: 'IoT Device Secret Tokens',
+                    desc: 'ESP32 ingestion requires preshared hardware tokens verified on every telemetry dispatch.',
+                  },
+                  {
+                    title: 'Zod Input Validation',
+                    desc: 'Strict runtime schema validation on every sensor ingest payload prevents buffer or injection attempts.',
+                  },
+                  {
+                    title: 'Audit Logging & Monitoring',
+                    desc: 'Critical threshold changes and device reassignments generate immutable event audit trails.',
+                  },
                 ].map((item) => (
-                  <li key={item} className="flex items-start gap-2.5 text-sm" style={{ color: 'var(--muted-fg)' }}>
-                    <CheckCircle className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
-                    {item}
+                  <li key={item.title} className="flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-bold text-[var(--heading)]">{item.title}</p>
+                      <p className="text-xs text-[var(--muted-fg)] mt-0.5">{item.desc}</p>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -390,91 +323,74 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Demo Mode ── */}
-      <section className="px-4 py-20" style={{ background: 'var(--card)' }}>
-        <div className="mx-auto max-w-4xl text-center">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium"
-            style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #f59e0b' }}>
-            <AlertTriangle className="h-4 w-4" />
-            Demo Mode Available
+      {/* ── Ready to Explore CTA ── */}
+      <section className="px-4 py-24 sm:py-32 relative overflow-hidden text-center">
+        <div className="mx-auto max-w-4xl relative z-10">
+          <div className="inline-flex items-center justify-center mb-6">
+            <BrandLogo size="lg" variant="icon" />
           </div>
-          <h2 className="text-3xl font-bold mb-4">Works Without Physical Hardware</h2>
-          <p className="text-lg mb-8" style={{ color: 'var(--muted-fg)' }}>
-            MediBox includes a built-in simulator that generates clearly labeled 
-            demo readings — perfect for presentations and demonstrations before hardware is connected.
-          </p>
-          <div className="grid gap-4 sm:grid-cols-3 text-left">
-            {[
-              { label: 'Normal Scenario', desc: 'All readings within healthy range', color: 'badge-normal' },
-              { label: 'Warning Scenario', desc: 'Elevated readings triggering WARNING alerts', color: 'badge-warning' },
-              { label: 'Critical Scenario', desc: 'Out-of-range readings triggering CRITICAL alerts', color: 'badge-critical' },
-            ].map((s) => (
-              <div key={s.label} className="card rounded-xl p-5">
-                <span className={`badge ${s.color} mb-3`}>{s.label}</span>
-                <p className="text-sm" style={{ color: 'var(--muted-fg)' }}>{s.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      {/* ── CTA ── */}
-      <section className="px-4 py-24">
-        <div className="mx-auto max-w-4xl text-center">
-          <h2 className="text-4xl font-extrabold mb-6">
-            Ready to explore{' '}
-            <span className="gradient-text">MediBox</span>?
+          <h2 className="text-4xl sm:text-6xl font-extrabold text-[var(--heading)] tracking-tight mb-6">
+            Experience the Future of{' '}
+            <span className="gradient-text">Connected Healthcare</span>
           </h2>
-          <p className="text-lg mb-10" style={{ color: 'var(--muted-fg)' }}>
-            Create an account to access the full dashboard, or sign in to explore the demo.
+          <p className="text-base sm:text-xl text-[var(--muted-fg)] max-w-2xl mx-auto mb-10 leading-relaxed">
+            Test the live simulator or link your ESP32 hardware to launch an all-in-one
+            health tracking and pillbox adherence center.
           </p>
-          <div className="flex flex-wrap justify-center gap-4">
-            <Link href="/register" className="btn btn-primary btn-lg">
+
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <Link
+              href="/register"
+              className="btn btn-primary btn-lg shadow-xl shadow-blue-500/25 text-base font-bold"
+            >
               Create Account
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="h-4.5 w-4.5 ml-1" />
             </Link>
-            <Link href="/login" className="btn btn-outline btn-lg">
-              Sign In
+            <Link
+              href="/login?demo=true"
+              className="btn btn-outline btn-lg glass-panel text-base font-bold"
+            >
+              Explore Live Demo
             </Link>
           </div>
         </div>
       </section>
 
       {/* ── Medical Disclaimer ── */}
-      <section id="about" className="border-t px-4 py-12" style={{ borderColor: 'var(--border)', background: 'var(--muted)' }}>
-        <div className="mx-auto max-w-4xl text-center">
-          <div className="rounded-2xl border p-6" style={{ borderColor: 'var(--border)', background: 'var(--card)' }}>
-            <div className="flex items-center justify-center gap-2 mb-3">
-              <AlertTriangle className="h-5 w-5 text-amber-500" />
-              <h3 className="font-semibold text-base">Medical Disclaimer</h3>
+      <section id="about" className="border-t border-[var(--border)] px-4 py-12 bg-[var(--muted)]">
+        <div className="mx-auto max-w-4xl">
+          <div className="card p-6 sm:p-8 rounded-2xl border border-amber-500/30 bg-amber-500/5">
+            <div className="flex items-center gap-2.5 mb-3 text-amber-600 dark:text-amber-400">
+              <AlertTriangle className="h-5 w-5" />
+              <h3 className="font-bold text-sm sm:text-base">Academic Medical Disclaimer</h3>
             </div>
-            <p className="text-sm leading-relaxed" style={{ color: 'var(--muted-fg)' }}>
-              MediBox is an <strong>educational health-monitoring system</strong> developed as 
-              an academic capstone project. It is <strong>not a substitute for professional medical advice, 
-              diagnosis, or treatment</strong>. All readings are for monitoring and educational purposes only. 
-              Always consult a qualified healthcare professional for medical concerns. 
-              Never disregard professional medical advice based on information from this system.
+            <p className="text-xs sm:text-sm text-[var(--muted-fg)] leading-relaxed">
+              MediBox is an <strong>educational IoT health monitoring platform</strong> developed as an academic capstone project.
+              It is <strong>not a medical device certified for clinical diagnosis or treatment</strong>. All readings (heart rate, SpO₂, body temperature)
+              are for monitoring and research demonstration only. Always seek the advice of a physician or other qualified health provider with any questions
+              regarding a medical condition.
             </p>
           </div>
         </div>
       </section>
 
       {/* ── Footer ── */}
-      <footer className="border-t px-4 py-8" style={{ borderColor: 'var(--border)', background: 'var(--card)' }}>
-        <div className="mx-auto max-w-7xl flex flex-col sm:flex-row items-center justify-between gap-4 text-sm" style={{ color: 'var(--muted-fg)' }}>
-          <div className="flex items-center gap-2">
-            <Heart className="h-4 w-4 text-red-500" />
-            <span>MediBox · Academic Capstone Project</span>
+      <footer className="border-t border-[var(--border)] px-4 py-12 bg-[var(--card)]">
+        <div className="mx-auto max-w-7xl flex flex-col md:flex-row items-center justify-between gap-6 text-sm text-[var(--muted-fg)]">
+          <BrandLogo size="sm" variant="inline" showTagline={true} />
+
+          <div className="flex items-center gap-6 font-medium text-xs sm:text-sm">
+            <Link href="/login" className="hover:text-blue-600 transition-colors">Sign In</Link>
+            <Link href="/register" className="hover:text-blue-600 transition-colors">Register</Link>
+            <Link href="/login?demo=true" className="hover:text-blue-600 transition-colors">Simulator Mode</Link>
           </div>
-          <div className="flex items-center gap-4">
-            <Link href="/login" className="hover:text-sky-500 transition-colors">Sign In</Link>
-            <Link href="/register" className="hover:text-sky-500 transition-colors">Register</Link>
-          </div>
+
+          <p className="text-xs text-[var(--muted-fg)]">
+            © {new Date().getFullYear()} MediBox Platform · Built with ESP32, Next.js & Firebase
+          </p>
         </div>
       </footer>
     </div>
   );
 }
-
-// Need React for Fragment
-import React from 'react';

@@ -26,6 +26,7 @@ interface AuthContextValue {
   role: UserRole | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginDemo: () => Promise<void>;
   register: (email: string, password: string, profileData: Partial<UserProfile>) => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
@@ -51,6 +52,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // Check if demo session is active in browser
+    if (typeof window !== 'undefined' && sessionStorage.getItem('medibox_demo_session') === 'true') {
+      let customProfile: UserProfile | null = null;
+      try {
+        const saved = sessionStorage.getItem('medibox_user_profile');
+        if (saved) customProfile = JSON.parse(saved);
+      } catch {}
+
+      const demoUser = {
+        uid: customProfile?.uid || 'demo-user-001',
+        email: customProfile?.email || 'demo@smartpb.me',
+        displayName: customProfile?.name || 'Sarah Jenkins',
+      } as unknown as User;
+
+      const demoProfile: UserProfile = customProfile || {
+        uid: 'demo-user-001',
+        name: 'Sarah Jenkins',
+        email: 'demo@smartpb.me',
+        role: 'USER',
+        status: 'ACTIVE',
+        assignedDeviceId: 'demobox-esp32-001',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        lastLogin: new Date().toISOString(),
+      };
+      setUser(demoUser);
+      setProfile(demoProfile);
+      setLoading(false);
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
       if (firebaseUser) {
@@ -62,6 +94,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
     return unsubscribe;
   }, [fetchProfile]);
+
+  const loginDemo = useCallback(async () => {
+    const demoUser = {
+      uid: 'demo-user-001',
+      email: 'demo@smartpb.me',
+      displayName: 'Sarah Jenkins',
+    } as unknown as User;
+
+    const demoProfile: UserProfile = {
+      uid: 'demo-user-001',
+      name: 'Sarah Jenkins',
+      email: 'demo@smartpb.me',
+      role: 'USER',
+      status: 'ACTIVE',
+      assignedDeviceId: 'demobox-esp32-001',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      lastLogin: new Date().toISOString(),
+    };
+
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('medibox_demo_session', 'true');
+    }
+    setUser(demoUser);
+    setProfile(demoProfile);
+    setLoading(false);
+  }, []);
 
   const login = async (email: string, password: string) => {
     const { user: firebaseUser } = await signInWithEmailAndPassword(auth, email, password);
@@ -108,7 +167,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
-    await signOut(auth);
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('medibox_demo_session');
+    }
+    try {
+      await signOut(auth);
+    } catch {
+      // Ignored if in demo session
+    }
+    setUser(null);
     setProfile(null);
   };
 
@@ -128,6 +195,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         role: profile?.role ?? null,
         loading,
         login,
+        loginDemo,
         register,
         logout,
         resetPassword,

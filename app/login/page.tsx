@@ -1,17 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from './useForm';
 import { useAuth } from '@/lib/auth/context';
 import { loginSchema } from '@/lib/validation/schemas';
 import { toast } from '@/components/ui/Toaster';
-import { Heart, Eye, EyeOff, AlertCircle, Loader2, ArrowLeft } from 'lucide-react';
+import { Heart, Eye, EyeOff, AlertCircle, Loader2, ArrowLeft, Sparkles } from 'lucide-react';
 import type { Metadata } from 'next';
 
+import { BrandLogo } from '@/components/brand/BrandLogo';
+
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { user, login, loginDemo } = useAuth();
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -21,6 +23,23 @@ export default function LoginPage() {
     email: '',
     password: '',
   });
+
+  useEffect(() => {
+    // If already authenticated (or demo session active), proceed directly to dashboard
+    if (user) {
+      window.location.href = '/dashboard';
+      return;
+    }
+
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('demo') === 'true' || params.get('demo') === '1') {
+        loginDemo().then(() => {
+          window.location.href = '/dashboard';
+        });
+      }
+    }
+  }, [user, loginDemo]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -50,28 +69,25 @@ export default function LoginPage() {
     <div className="min-h-screen flex" style={{ background: 'var(--bg)' }}>
       {/* Left panel */}
       <div className="hidden lg:flex lg:w-1/2 hero-gradient items-center justify-center p-12 relative overflow-hidden">
-        <div className="absolute inset-0 bg-black/20" />
+        <div className="absolute inset-0 bg-black/25" />
         <div className="relative z-10 text-white max-w-md">
           <div className="flex items-center gap-3 mb-8">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20 backdrop-blur">
-              <Heart className="h-7 w-7 text-white" />
-            </div>
+            <BrandLogo size="lg" variant="icon" />
             <div>
-              <h1 className="text-xl font-bold">MediBox</h1>
-              <p className="text-white/70 text-sm">Connected Health Monitoring</p>
+              <h1 className="text-2xl font-bold tracking-tight">MediBox</h1>
+              <p className="text-white/80 text-sm">Connected Health &amp; Pillbox Hub</p>
             </div>
           </div>
           <h2 className="text-4xl font-extrabold mb-4 leading-tight">
-            Monitor health,<br />intelligently.
+            Intelligent Care,<br />Every Heartbeat.
           </h2>
-          <p className="text-white/80 text-lg leading-relaxed">
-            Real-time IoT sensor monitoring, trend analytics, and configurable alerts — 
-            all in one secure dashboard.
+          <p className="text-white/85 text-base leading-relaxed">
+            Real-time IoT bio-sensors, continuous physiological trends, and automated smart pillbox tracking — all in one secure clinical dashboard.
           </p>
           <div className="mt-10 space-y-3">
-            {['Real-time ESP32 sensor data', 'Role-based access control', 'Interactive health charts', 'Intelligent alert system'].map((f) => (
+            {['Real-time ESP32 sensor data', '15-Compartment load cell monitoring', 'Interactive health charts', 'Sub-second clinical alerts'].map((f) => (
               <div key={f} className="flex items-center gap-3 text-white/90 text-sm">
-                <div className="h-1.5 w-1.5 rounded-full bg-white/60" />
+                <div className="h-2 w-2 rounded-full bg-cyan-400" />
                 {f}
               </div>
             ))}
@@ -88,8 +104,8 @@ export default function LoginPage() {
           </Link>
 
           <div className="mb-8">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl hero-gradient shadow-lg shadow-sky-500/20 mb-4">
-              <Heart className="h-5 w-5 text-white" />
+            <div className="mb-4">
+              <BrandLogo size="md" variant="inline" />
             </div>
             <h2 className="text-2xl font-bold mb-1">Sign in</h2>
             <p style={{ color: 'var(--muted-fg)' }} className="text-sm">
@@ -162,20 +178,33 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm" style={{ color: 'var(--muted-fg)' }}>
+          {/* Quick 1-Click Demo Login */}
+          <div className="mt-4 pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
+            <button
+              type="button"
+              onClick={async () => {
+                setLoading(true);
+                try {
+                  await loginDemo();
+                  window.location.href = '/dashboard';
+                } finally {
+                  setLoading(false);
+                }
+              }}
+              disabled={loading}
+              className="btn btn-outline w-full flex items-center justify-center gap-2 border-blue-500/40 hover:bg-blue-500/10 text-blue-600 dark:text-cyan-400 font-semibold"
+            >
+              <Sparkles className="h-4 w-4 text-cyan-500" />
+              Explore Demo Dashboard (No Hardware Needed)
+            </button>
+          </div>
+
+          <p className="mt-5 text-center text-sm" style={{ color: 'var(--muted-fg)' }}>
             Don&apos;t have an account?{' '}
             <Link href="/register" className="text-sky-500 font-medium hover:underline">
               Create one
             </Link>
           </p>
-
-          {/* Demo hint */}
-          <div className="mt-6 demo-banner rounded-xl">
-            <AlertCircle className="h-4 w-4 flex-shrink-0" />
-            <span>
-              Demo mode available after login — no physical device required.
-            </span>
-          </div>
         </div>
       </div>
     </div>

@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="100%" height="100%">
+  <defs>
+    <linearGradient id="boxBody" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+    <linearGradient id="lidActive" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#059669" stop-opacity="0.9" />
+    </linearGradient>
+    <linearGradient id="lidWarn" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#d97706" stop-opacity="0.9" />
+    </linearGradient>
+    <linearGradient id="lidNormal" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#1d4ed8" stop-opacity="0.9" />
+    </linearGradient>
+    <filter id="pillGlow">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Enclosure Body -->
+  <rect x="50" y="35" width="300" height="230" rx="24" fill="url(#boxBody)" stroke="#334155" stroke-width="2" />
+  
+  <!-- Status Light & OLED header -->
+  <g transform="translate(75, 52)">
+    <circle cx="10" cy="10" r="5" fill="#10b981" filter="url(#pillGlow)" />
+    <text x="25" y="14" font-family="'Plus Jakarta Sans', sans-serif" font-size="11" font-weight="700" fill="#f8fafc">MediBox 15-Compartment Matrix</text>
+    <text x="210" y="14" font-family="monospace" font-size="9" fill="#06b6d4">HX711 LOAD CELLS</text>
+  </g>
+
+  <!-- 3 Rows x 5 Columns Compartment Matrix -->
+  <!-- Row 1 -->
+  <g transform="translate(75, 80)">
+    <rect x="0" y="0" width="46" height="46" rx="8" fill="url(#lidNormal)" stroke="#60a5fa" stroke-width="1.5" />
+    <text x="23" y="27" font-family="'Plus Jakarta Sans', sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">01</text>
+
+    <rect x="51" y="0" width="46" height="46" rx="8" fill="url(#lidActive)" stroke="#34d399" stroke-width="1.5" />
+    <text x="74" y="27" font-family="'Plus Jakarta Sans', sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">02</text>
+
+    <rect x="102" y="0" width="46" height="46" rx="8" fill="url(#lidWarn)" stroke="#fbbf24" stroke-width="1.5" />
+    <text x="125" y="27" font-family="'Plus Jakarta Sans', sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">03</text>
+
+    <rect x="153" y="0" width="46" height="46" rx="8" fill="url(#lidNormal)" stroke="#60a5fa" stroke-width="1.5" />
+    <text x="176" y="27" font-family="'Plus Jakarta Sans', sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">04</text>
+
+    <rect x="204" y="0" width="46" height="46" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1" />
+    <text x="227" y="27" font-family="'Plus Jakarta Sans', sans-serif" font-size="12" font-weight="600" fill="#64748b" text-anchor="middle">05</text>
+  </g>
+
+  <!-- Row 2 -->
+  <g transform="translate(75, 134)">
+    <rect x="0" y="0" width="46" height="46" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1" />
+    <text x="23" y="27" font-family="'Plus Jakarta Sans', sans-serif" font-size="12" font-weight="600" fill="#64748b" text-anchor="middle">06</text>
+
+    <rect x="51" y="0" width="46" height="46" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1" />
+    <text x="74" y="27" font-family="'Plus Jakarta Sans', sans-serif" font-size="12" font-weight="600" fill="#64748b" text-anchor="middle">07</text>
+
+    <rect x="102" y="0" width="46" height="46" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1" />
+    <text x="125" y="27" font-family="'Plus Jakarta Sans', sans-serif" font-size="12" font-weight="600" fill="#64748b" text-anchor="middle">08</text>
+
+    <rect x="153" y="0" width="46" height="46" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1" />
+    <text x="176" y="27" font-family="'Plus Jakarta Sans', sans-serif" font-size="12" font-weight="600" fill="#64748b" text-anchor="middle">09</text>
+
+    <rect x="204" y="0" width="46" height="46" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1" />
+    <text x="227" y="27" font-family="'Plus Jakarta Sans', sans-serif" font-size="12" font-weight="600" fill="#64748b" text-anchor="middle">10</text>
+  </g>
+
+  <!-- Row 3 -->
+  <g transform="translate(75, 188)">
+    <rect x="0" y="0" width="46" height="46" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1" />
+    <text x="23" y="27" font-family="'Plus Jakarta Sans', sans-serif" font-size="12" font-weight="600" fill="#64748b" text-anchor="middle">11</text>
+
+    <rect x="51" y="0" width="46" height="46" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1" />
+    <text x="74" y="27" font-family="'Plus Jakarta Sans', sans-serif" font-size="12" font-weight="600" fill="#64748b" text-anchor="middle">12</text>
+
+    <rect x="102" y="0" width="46" height="46" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1" />
+    <text x="125" y="27" font-family="'Plus Jakarta Sans', sans-serif" font-size="12" font-weight="600" fill="#64748b" text-anchor="middle">13</text>
+
+    <rect x="153" y="0" width="46" height="46" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1" />
+    <text x="176" y="27" font-family="'Plus Jakarta Sans', sans-serif" font-size="12" font-weight="600" fill="#64748b" text-anchor="middle">14</text>
+
+    <rect x="204" y="0" width="46" height="46" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1" />
+    <text x="227" y="27" font-family="'Plus Jakarta Sans', sans-serif" font-size="12" font-weight="600" fill="#64748b" text-anchor="middle">15</text>
+  </g>
+
+  <!-- Bottom LED Bar -->
+  <line x1="80" y1="248" x2="320" y2="248" stroke="#06b6d4" stroke-width="3" stroke-linecap="round" filter="url(#pillGlow)" opacity="0.8" />
+</svg>

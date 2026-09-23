@@ -20,6 +20,8 @@ import {
 } from 'lucide-react';
 import { Sidebar } from './Sidebar';
 
+import { BrandLogo } from '@/components/brand/BrandLogo';
+
 interface HeaderProps {
   title?: string;
 }
@@ -61,19 +63,22 @@ export function Header({ title }: HeaderProps) {
       )}
 
       <header
-        className="sticky top-0 z-30 flex h-16 items-center justify-between border-b px-4 sm:px-6"
-        style={{ background: 'var(--card)', borderColor: 'var(--border)' }}
+        className="sticky top-0 z-30 flex h-20 items-center justify-between border-b px-5 sm:px-8 backdrop-blur-md shadow-sm"
+        style={{ background: 'var(--glass)', borderColor: 'var(--border)' }}
       >
-        {/* Left: hamburger + title */}
-        <div className="flex items-center gap-3">
+        {/* Left: hamburger + logo + title */}
+        <div className="flex items-center gap-4">
           <button
             className="btn btn-ghost btn-icon lg:hidden"
             onClick={() => setMenuOpen(true)}
             aria-label="Open navigation menu"
           >
-            <Menu className="h-5 w-5" />
+            <Menu className="h-6 w-6" />
           </button>
-          {title && <h1 className="text-base font-semibold">{title}</h1>}
+          <div className="lg:hidden flex items-center">
+            <BrandLogo size="md" variant="inline" href="/dashboard" />
+          </div>
+          {title && <h1 className="text-lg font-bold tracking-tight text-[var(--heading)] hidden sm:block">{title}</h1>}
         </div>
 
         {/* Right: actions */}
