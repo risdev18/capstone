@@ -224,9 +224,9 @@ export function useDemoData(options?: UseDemoDataOptions) {
   }, [realDevice, realReadings, realAlerts]);
 
   const isDemoMode = useMemo(() => {
-    if (manualDemoOverride !== null) return manualDemoOverride;
-    return !hasRealHardwareData;
-  }, [manualDemoOverride, hasRealHardwareData]);
+    // Permanently disable demo simulation mode so the dashboard only shows real data.
+    return false;
+  }, []);
 
   // Derived effective readings (latest single reading per metric)
   const effectiveReadings = useMemo(() => {
