@@ -126,6 +126,10 @@ export function useDemoData(options?: UseDemoDataOptions) {
       return;
     }
 
+    // DEBUG: Print the Firebase Auth UID so you can copy it into Firestore device doc's ownerId
+    console.log('[MediBox DEBUG] Your Firebase Auth UID is:', userId);
+    console.log('[MediBox DEBUG] Make sure your Firestore device document has ownerId set to this EXACT value ^');
+
     let unsubDevice: (() => void) | undefined;
     let unsubHistory: (() => void) | undefined;
     let unsubAlerts: (() => void) | undefined;
