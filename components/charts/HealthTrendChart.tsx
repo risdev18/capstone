@@ -19,9 +19,10 @@ interface ChartProps {
   metric: keyof typeof METRIC_CONFIGS;
   color?: string;
   height?: number;
+  type?: 'monotone' | 'step' | 'stepAfter' | 'linear';
 }
 
-export function HealthTrendChart({ data, metric, color = '#0ea5e9', height = 300 }: ChartProps) {
+export function HealthTrendChart({ data, metric, color = '#0ea5e9', height = 300, type = 'monotone' }: ChartProps) {
   const config = METRIC_CONFIGS[metric] as MetricConfig | undefined;
 
   const chartData = useMemo(() => {
@@ -106,7 +107,7 @@ export function HealthTrendChart({ data, metric, color = '#0ea5e9', height = 300
           )}
 
           <Line
-            type="monotone"
+            type={type}
             dataKey="value"
             stroke={color}
             strokeWidth={3}

@@ -230,6 +230,38 @@ export default function DashboardPage() {
         />
       </div>
 
+      {/* ── Weight & IR Charts ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        <div className="card rounded-2xl p-6">
+          <div className="mb-4">
+            <h2 className="text-base font-semibold">Weight Sensor (Load Cell)</h2>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--muted-fg)' }}>
+              Live pillbox weight tracking
+            </p>
+          </div>
+          <HealthTrendChart
+            data={history.filter((r) => r.metric === 'weight')}
+            metric="weight"
+            color="#10b981" // emerald-500
+          />
+        </div>
+
+        <div className="card rounded-2xl p-6">
+          <div className="mb-4">
+            <h2 className="text-base font-semibold">IR Sensor Activity</h2>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--muted-fg)' }}>
+              Digital pill detection (Box Wave)
+            </p>
+          </div>
+          <HealthTrendChart
+            data={history.filter((r) => r.metric === 'ir_status')}
+            metric="ir_status"
+            color="#f59e0b" // amber-500
+            type="stepAfter"
+          />
+        </div>
+      </div>
+
       {/* ── Medicine Schedule & Recent Medication Activity ── */}
       <div>
         <div className="flex items-center justify-between mb-3">

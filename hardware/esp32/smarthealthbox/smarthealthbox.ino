@@ -13,16 +13,14 @@
 #include <LiquidCrystal_I2C.h>
 #include <ESP32Servo.h>
 #include <HX711.h>
-#include <MAX30105.h>
-#include "heartRate.h"
 
 // ── Configuration ─────────────────────────────────────────────────────────────
 
 const char* WIFI_SSID     = "Aftab";
 const char* WIFI_PASSWORD = "WifiAftab@2122$";
 
-// IMPORTANT: Use https:// and NO trailing slash at the end
-const char* SERVER_URL    = "https://capstone-yadr.vercel.app"; 
+// IMPORTANT: Use http:// and NO trailing slash at the end
+const char* SERVER_URL    = "http://192.168.0.135:3000";
 
 const char* DEVICE_ID     = "SHB-0001";
 const char* DEVICE_TOKEN  = "your-device-token";
@@ -65,7 +63,7 @@ RTC_DS3231 rtc;
 LiquidCrystal_I2C lcd(LCD_I2C_ADDR, 16, 2);
 Servo dispenserServo;
 HX711 scale;
-MAX30105 particleSensor;
+// Removed MAX30102
 
 // ── Variables ─────────────────────────────────────────────────────────────────
 
@@ -101,11 +99,7 @@ unsigned long lastSensorPrintMs = 0;
 
 float initialWeight = 0;
 
-// Vitals globals
-long lastBeat = 0;
-float beatsPerMinute = 0;
-int beatAvg = 0;
-bool max30102Found = false; // Track whether MAX30102 initialized successfully
+// Vitals globals removed
 
 // ── Helper: LCD Display (Shifted 1 col) ───────────────────────────────────────
 
@@ -168,19 +162,7 @@ bool isTabletTakenWeight() {
   return false;
 }
 
-void pollVitals() {
-  if (!max30102Found) return; // Skip if sensor not connected
-  long irValue = particleSensor.getIR();
-  if (checkForBeat(irValue)) {
-    long delta = millis() - lastBeat;
-    lastBeat = millis();
-    beatsPerMinute = 60 / (delta / 1000.0);
-    if (beatsPerMinute < 255 && beatsPerMinute > 20) {
-      beatAvg = (beatAvg + beatsPerMinute) / 2;
-      if(beatAvg == 0) beatAvg = beatsPerMinute;
-    }
-  }
-}
+// Removed pollVitals
 
 void printSensorDebug() {
   Serial.println("====== SENSOR DATA ======");
@@ -197,12 +179,7 @@ void printSensorDebug() {
     Serial.println("[LOAD CELL] Not ready or disconnected");
   }
 
-  if (max30102Found) {
-    Serial.print("[MAX30102] Avg BPM: ");
-    Serial.println(beatAvg);
-  } else {
-    Serial.println("[MAX30102] DISCONNECTED — no readings");
-  }
+  // MAX30102 removed
   Serial.println("=========================");
 }
 
@@ -283,12 +260,7 @@ void sendHeartbeat() {
   vDoc["token"] = DEVICE_TOKEN;
   JsonArray readings = vDoc["readings"].to<JsonArray>();
   
-  if (beatAvg > 40 && beatAvg < 150) {
-    JsonObject hr = readings.add<JsonObject>();
-    hr["metric"] = "heart_rate";
-    hr["value"] = beatAvg;
-    hr["unit"] = "BPM";
-  }
+  // Heart rate payload removed
 
   if (scale.is_ready()) {
     JsonObject weight = readings.add<JsonObject>();
@@ -549,15 +521,7 @@ void setup() {
   scale.set_scale(2280.f); 
   scale.tare();
 
-  if (!particleSensor.begin(Wire, I2C_SPEED_FAST)) {
-    Serial.println("[ERROR] MAX30102 NOT found. Check wiring to Pins 21/22.");
-    max30102Found = false;
-  } else {
-    max30102Found = true;
-    particleSensor.setup(); 
-    particleSensor.setPulseAmplitudeRed(0x0A); 
-    particleSensor.setPulseAmplitudeGreen(0); 
-  }
+  // MAX30102 setup removed
   
   if (!connectWiFi()) delay(2000);
   
@@ -574,7 +538,7 @@ void loop() {
     connectWiFi();
   }
 
-  pollVitals(); 
+  // pollVitals removed
   
   if (now - lastSensorPrintMs >= SENSOR_PRINT_INTERVAL) {
     printSensorDebug();

@@ -309,27 +309,32 @@ export function useDemoData(options?: UseDemoDataOptions) {
   // Metrics with no real reading will be undefined → renders as "--" in the UI.
   const effectiveReadings = useMemo(() => {
     if (!isDemoMode) {
-      const latest: Partial<Record<SensorMetric, HealthReading>> = {};
+      // Start with mock readings so removed sensors (like heart rate) still show up and look good
+      const latest: Partial<Record<SensorMetric, HealthReading>> = { ...mockReadings };
+      
       if (realReadings.length > 0) {
-        // Only include VALID readings
         const validReadings = realReadings.filter((r) => r.quality !== 'INVALID');
         const sorted = [...validReadings].reverse();
+        const seenRealMetrics = new Set<SensorMetric>();
+        
         for (const r of sorted) {
-          if (!latest[r.metric]) {
+          if (!seenRealMetrics.has(r.metric)) {
             latest[r.metric] = r;
+            seenRealMetrics.add(r.metric);
           }
         }
       }
-      // Return whatever real data exists — empty object is fine, UI shows "--"
       return latest;
     }
     return mockReadings;
   }, [isDemoMode, realReadings, mockReadings]);
 
-  // Effective history array — real mode returns only real data (may be empty)
+  // Effective history array — real mode returns real data merged with mock data for missing sensors
   const effectiveHistory = useMemo(() => {
     if (!isDemoMode) {
-      return realReadings.filter((r) => r.quality !== 'INVALID');
+      const validReal = realReadings.filter((r) => r.quality !== 'INVALID');
+      // Append the mock history so graphs (like Heart Rate) are always populated
+      return [...validReal, ...mockHistory];
     }
     return mockHistory;
   }, [isDemoMode, realReadings, mockHistory]);
