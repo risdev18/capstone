@@ -110,13 +110,37 @@ export default function RegisterPage() {
     }
 
     try {
-      // Bypassing Firebase Authentication completely to remove API Key errors.
-      // We directly simulate a successful registration using the local profile.
-      setTimeout(() => {
-        handleOfflineContinue();
-      }, 500);
+      await register(form.email, form.password, {
+        name: form.name,
+        phone: form.phone?.trim() || undefined,
+        dateOfBirth: form.dateOfBirth || undefined,
+        gender: (form.gender as any) || undefined,
+        emergencyContact: form.emergencyContactName?.trim() ? {
+          name: form.emergencyContactName.trim(),
+          phone: form.emergencyContactPhone?.trim() || '',
+        } : undefined,
+        height: form.height ? parseFloat(form.height) : undefined,
+        weight: form.weight ? parseFloat(form.weight) : undefined,
+        bloodGroup: form.bloodGroup || undefined,
+      });
+      toast({ title: 'Account created!', description: `Welcome to MediBox, ${form.name}!`, variant: 'success' });
+      window.location.href = '/dashboard';
     } catch (err: unknown) {
-      setError('Registration failed.');
+      console.error('Register Error:', err);
+      if (err && typeof err === 'object' && 'code' in err) {
+        const code = (err as { code: string }).code;
+        if (code === 'auth/email-already-in-use') {
+          setError('An account with this email already exists. Try signing in.');
+        } else if (code === 'auth/weak-password') {
+          setError('Password is too weak. Use at least 8 characters with a number and uppercase letter.');
+        } else if (code === 'auth/invalid-email') {
+          setError('Invalid email address format.');
+        } else {
+          setError('Registration failed. Please try again.');
+        }
+      } else {
+        setError('Registration failed. Please check your connection and try again.');
+      }
       setLoading(false);
     }
   }

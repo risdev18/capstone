@@ -53,13 +53,12 @@ export default function LoginPage() {
 
     setLoading(true);
     try {
-      // Bypassing Firebase Authentication completely to remove API Key errors.
-      await loginDemo();
+      await login(values.email, values.password);
       toast({ title: 'Welcome back!', variant: 'success' });
       window.location.href = '/dashboard';
     } catch (err: unknown) {
       console.error('Login Error:', err);
-      setError('Login failed.');
+      setError(getFirebaseErrorMessage(err));
       setLoading(false);
     }
   }
