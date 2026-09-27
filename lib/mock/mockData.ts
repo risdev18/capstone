@@ -241,8 +241,6 @@ export function generateMockHistory(
     'temperature',
     'blood_pressure_systolic',
     'blood_pressure_diastolic',
-    'weight',
-    'ir_status'
   ];
 
   const unitMap: Record<SensorMetric, string> = {
