@@ -172,7 +172,7 @@ export const READING_BOUNDS = {
   temperature: { min: 30, max: 45 },
   blood_pressure_systolic: { min: 50, max: 250 },
   blood_pressure_diastolic: { min: 30, max: 150 },
-  weight: { min: 0, max: 5000 },
+  weight: { min: -5, max: 5000 },
   ir_status: { min: 0, max: 1 },
 } as const;
 

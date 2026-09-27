@@ -224,7 +224,14 @@ export function useDemoData(options?: UseDemoDataOptions) {
   // ── Freshness check ──
   // A reading is "fresh" if it arrived within the last 5 minutes.
   // A device is "live" if its lastSeen is within the last 5 minutes AND status is ONLINE.
-  const FRESHNESS_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
+  const FRESHNESS_WINDOW_MS = 90 * 1000; // 90 seconds (1.5× heartbeat interval)
+
+  // Staleness ticker — forces re-evaluation every 30s even when Firestore stops pushing
+  const [stalenessTick, setStalenessTick] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => setStalenessTick((t) => t + 1), 5_000);
+    return () => clearInterval(interval);
+  }, []);
 
   const hasRealHardwareData = useMemo(() => {
     const now = Date.now();
@@ -244,7 +251,7 @@ export function useDemoData(options?: UseDemoDataOptions) {
     }
 
     return false;
-  }, [realDevice, realReadings]);
+  }, [realDevice, realReadings, stalenessTick]);
 
   const isDemoMode = useMemo(() => {
     if (manualDemoOverride !== null) return manualDemoOverride;

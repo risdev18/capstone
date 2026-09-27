@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth/context';
 import { METRIC_CONFIGS, type HealthReading, type HealthStatus } from '@/types/health';
 import { getHealthStatus, getStatusColor, getStatusBg, formatRelativeTime, isDeviceOnline, formatValue } from '@/lib/utils/health';
@@ -52,6 +52,13 @@ export default function DashboardPage() {
     enableLiveTicks: true,
     tickIntervalMs: 3000,
   });
+
+  // Re-evaluate device freshness every 30 seconds so unplugging shows offline
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 5_000);
+    return () => clearInterval(id);
+  }, []);
 
   const isOnline = device ? isDeviceOnline(device.lastSeen) && device.status === 'ONLINE' : false;
 

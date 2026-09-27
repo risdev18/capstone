@@ -15,7 +15,7 @@ import { z } from 'zod';
 
 const dispenseSchema = z.object({
   deviceId: z.string().min(1),
-  compartmentId: z.string().regex(/^C[1-8]$/, 'compartmentId must be C1–C8'),
+  compartmentId: z.string().regex(/^C[1-2]$/, 'compartmentId must be C1–C2'),
   requestedBy: z.string().min(1),
   reason: z.string().optional(),
 });

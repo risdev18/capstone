@@ -48,8 +48,6 @@ const char* DEVICE_TOKEN  = "your-device-token";
 #define SERVO_CLOSED_ANGLE  0
 #define COMPARTMENT_1_ANGLE 10
 #define COMPARTMENT_2_ANGLE 40
-#define COMPARTMENT_3_ANGLE 70
-#define COMPARTMENT_4_ANGLE 100
 #define SERVO_OPEN_MS       1500
 
 #define TAKE_WINDOW_MS      30000
@@ -141,8 +139,6 @@ void openCompartment(const char* compartmentId) {
   int angle = SERVO_CLOSED_ANGLE;
   if (strcmp(compartmentId, "C1") == 0) angle = COMPARTMENT_1_ANGLE;
   else if (strcmp(compartmentId, "C2") == 0) angle = COMPARTMENT_2_ANGLE;
-  else if (strcmp(compartmentId, "C3") == 0) angle = COMPARTMENT_3_ANGLE;
-  else if (strcmp(compartmentId, "C4") == 0) angle = COMPARTMENT_4_ANGLE;
   else {
     Serial.println("[SERVO] Invalid Compartment!");
     return;

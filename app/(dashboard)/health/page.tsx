@@ -138,7 +138,7 @@ export default function LiveMonitoringPage() {
             { name: 'MAX30102 PPG', desc: 'Optical Heart & SpO₂', metrics: ['heart_rate', 'spo2'] as Metric[], rate: '25Hz' },
             { name: 'DS18B20 1-Wire', desc: 'Digital Temperature', metrics: ['temperature'] as Metric[], rate: '0.5Hz' },
             { name: 'HX711 24-bit ADC', desc: 'Pill Weight Load Cell', metrics: [] as Metric[], rate: '10Hz' },
-            { name: 'IR Gate Sensors', desc: 'Pill Compartments', metrics: [] as Metric[], rate: 'Armed' },
+            { name: 'IR Gate Sensors', desc: '2 Pill Compartments', metrics: [] as Metric[], rate: 'Armed' },
           ].map((sensor) => {
             const hasData = sensor.metrics.length > 0
               ? sensor.metrics.some((m) => readings[m] != null)

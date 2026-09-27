@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { MOCK_MEDICATIONS, MOCK_MEDICATION_SCHEDULES } from '@/lib/mock/mockData';
 
 export default function MedicineBoxPage() {
-  // Map 15 hardware compartments
-  const compartments = Array.from({ length: 15 }).map((_, i) => {
+  // Map 2 hardware compartments
+  const compartments = Array.from({ length: 2 }).map((_, i) => {
     const slotNumber = (i + 1).toString();
     const id = `C${String(i + 1).padStart(2, '0')}`;
     const med = MOCK_MEDICATIONS.find((m) => m.compartmentId === slotNumber);
@@ -45,7 +45,7 @@ export default function MedicineBoxPage() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Smart Box Overview</h1>
             <p className="text-muted-foreground mt-1">
-              Live hardware telemetry of your 15-compartment MediBox pill dispenser.
+              Live hardware telemetry of your 2-compartment MediBox pill dispenser.
             </p>
           </div>
         </div>
