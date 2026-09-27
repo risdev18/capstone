@@ -217,37 +217,63 @@ export function useDemoData(options?: UseDemoDataOptions) {
     };
   }, [userId]);
 
-  // Automatic preference logic:
-  // If real data exists AND user hasn't forced manual mock, use real data.
+  // ── Freshness check ──
+  // A reading is "fresh" if it arrived within the last 5 minutes.
+  // A device is "live" if its lastSeen is within the last 5 minutes AND status is ONLINE.
+  const FRESHNESS_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
+
   const hasRealHardwareData = useMemo(() => {
-    return Boolean(realDevice || realReadings.length > 0 || realAlerts.length > 0);
-  }, [realDevice, realReadings, realAlerts]);
+    const now = Date.now();
+
+    // Check if any VALID reading arrived recently
+    const hasFreshReadings = realReadings.some((r) => {
+      if (r.quality === 'INVALID') return false;
+      const readingAge = now - new Date(r.timestamp || r.createdAt).getTime();
+      return readingAge < FRESHNESS_WINDOW_MS;
+    });
+    if (hasFreshReadings) return true;
+
+    // Check if device itself reports as ONLINE with a recent heartbeat
+    if (realDevice && realDevice.status === 'ONLINE' && realDevice.lastSeen) {
+      const deviceAge = now - new Date(realDevice.lastSeen).getTime();
+      if (deviceAge < FRESHNESS_WINDOW_MS) return true;
+    }
+
+    return false;
+  }, [realDevice, realReadings]);
 
   const isDemoMode = useMemo(() => {
     if (manualDemoOverride !== null) return manualDemoOverride;
-    // Auto-enable demo mode only when no real hardware data exists
+    // Auto-enable demo mode only when no FRESH real hardware data exists
     return !hasRealHardwareData;
   }, [manualDemoOverride, hasRealHardwareData]);
 
   // Derived effective readings (latest single reading per metric)
+  // When in real-hardware mode, ONLY show real values — never silently mix in mock data.
+  // Metrics with no real reading will be undefined → renders as "--" in the UI.
   const effectiveReadings = useMemo(() => {
-    if (!isDemoMode && realReadings.length > 0) {
+    if (!isDemoMode) {
       const latest: Partial<Record<SensorMetric, HealthReading>> = {};
-      const sorted = [...realReadings].reverse();
-      for (const r of sorted) {
-        if (!latest[r.metric]) {
-          latest[r.metric] = r;
+      if (realReadings.length > 0) {
+        // Only include VALID readings
+        const validReadings = realReadings.filter((r) => r.quality !== 'INVALID');
+        const sorted = [...validReadings].reverse();
+        for (const r of sorted) {
+          if (!latest[r.metric]) {
+            latest[r.metric] = r;
+          }
         }
       }
+      // Return whatever real data exists — empty object is fine, UI shows "--"
       return latest;
     }
     return mockReadings;
   }, [isDemoMode, realReadings, mockReadings]);
 
-  // Effective history array
+  // Effective history array — real mode returns only real data (may be empty)
   const effectiveHistory = useMemo(() => {
-    if (!isDemoMode && realReadings.length > 0) {
-      return realReadings;
+    if (!isDemoMode) {
+      return realReadings.filter((r) => r.quality !== 'INVALID');
     }
     return mockHistory;
   }, [isDemoMode, realReadings, mockHistory]);
@@ -265,17 +291,17 @@ export function useDemoData(options?: UseDemoDataOptions) {
     return MOCK_SENSORS;
   }, []);
 
-  // Effective alerts
+  // Effective alerts — real mode returns only real alerts (may be empty)
   const effectiveAlerts = useMemo(() => {
-    if (!isDemoMode && realAlerts.length > 0) {
+    if (!isDemoMode) {
       return realAlerts;
     }
     return mockAlerts;
   }, [isDemoMode, realAlerts, mockAlerts]);
 
-  // Effective medication events
+  // Effective medication events — real mode returns only real events (may be empty)
   const effectiveMedEvents = useMemo(() => {
-    if (!isDemoMode && realMedEvents.length > 0) {
+    if (!isDemoMode) {
       return realMedEvents;
     }
     return mockMedEvents;

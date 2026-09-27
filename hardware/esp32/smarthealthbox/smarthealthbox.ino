@@ -107,6 +107,7 @@ float initialWeight = 0;
 long lastBeat = 0;
 float beatsPerMinute = 0;
 int beatAvg = 0;
+bool max30102Found = false; // Track whether MAX30102 initialized successfully
 
 // ── Helper: LCD Display (Shifted 1 col) ───────────────────────────────────────
 
@@ -172,6 +173,7 @@ bool isTabletTakenWeight() {
 }
 
 void pollVitals() {
+  if (!max30102Found) return; // Skip if sensor not connected
   long irValue = particleSensor.getIR();
   if (checkForBeat(irValue)) {
     long delta = millis() - lastBeat;
@@ -199,8 +201,12 @@ void printSensorDebug() {
     Serial.println("[LOAD CELL] Not ready or disconnected");
   }
 
-  Serial.print("[MAX30102] Avg BPM: ");
-  Serial.println(beatAvg);
+  if (max30102Found) {
+    Serial.print("[MAX30102] Avg BPM: ");
+    Serial.println(beatAvg);
+  } else {
+    Serial.println("[MAX30102] DISCONNECTED — no readings");
+  }
   Serial.println("=========================");
 }
 
@@ -549,7 +555,9 @@ void setup() {
 
   if (!particleSensor.begin(Wire, I2C_SPEED_FAST)) {
     Serial.println("[ERROR] MAX30102 NOT found. Check wiring to Pins 21/22.");
+    max30102Found = false;
   } else {
+    max30102Found = true;
     particleSensor.setup(); 
     particleSensor.setPulseAmplitudeRed(0x0A); 
     particleSensor.setPulseAmplitudeGreen(0); 

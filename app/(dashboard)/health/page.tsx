@@ -134,34 +134,28 @@ export default function LiveMonitoringPage() {
       <div className="card rounded-2xl p-6">
         <h2 className="text-base font-semibold mb-3">Active Sensor Telemetry</h2>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
-          <div className="p-3 rounded-xl bg-[var(--muted)] flex items-center justify-between">
-            <div>
-              <p className="font-semibold">MAX30102 PPG</p>
-              <p className="text-[var(--muted-fg)]">Optical Heart & SpO₂</p>
-            </div>
-            <span className="badge badge-normal text-[10px]">Active 25Hz</span>
-          </div>
-          <div className="p-3 rounded-xl bg-[var(--muted)] flex items-center justify-between">
-            <div>
-              <p className="font-semibold">DS18B20 1-Wire</p>
-              <p className="text-[var(--muted-fg)]">Digital Temperature</p>
-            </div>
-            <span className="badge badge-normal text-[10px]">Active 0.5Hz</span>
-          </div>
-          <div className="p-3 rounded-xl bg-[var(--muted)] flex items-center justify-between">
-            <div>
-              <p className="font-semibold">HX711 24-bit ADC</p>
-              <p className="text-[var(--muted-fg)]">Pill Weight Load Cell</p>
-            </div>
-            <span className="badge badge-normal text-[10px]">Active 10Hz</span>
-          </div>
-          <div className="p-3 rounded-xl bg-[var(--muted)] flex items-center justify-between">
-            <div>
-              <p className="font-semibold">IR Gate Sensors</p>
-              <p className="text-[var(--muted-fg)]">15 Pill Compartments</p>
-            </div>
-            <span className="badge badge-normal text-[10px]">Armed / Ready</span>
-          </div>
+          {[
+            { name: 'MAX30102 PPG', desc: 'Optical Heart & SpO₂', metrics: ['heart_rate', 'spo2'] as Metric[], rate: '25Hz' },
+            { name: 'DS18B20 1-Wire', desc: 'Digital Temperature', metrics: ['temperature'] as Metric[], rate: '0.5Hz' },
+            { name: 'HX711 24-bit ADC', desc: 'Pill Weight Load Cell', metrics: [] as Metric[], rate: '10Hz' },
+            { name: 'IR Gate Sensors', desc: 'Pill Compartments', metrics: [] as Metric[], rate: 'Armed' },
+          ].map((sensor) => {
+            const hasData = sensor.metrics.length > 0
+              ? sensor.metrics.some((m) => readings[m] != null)
+              : !isDemoMode; // for non-health sensors, show status based on mode
+            const statusLabel = isDemoMode ? `Sim ${sensor.rate}` : hasData ? `Active ${sensor.rate}` : 'No Data';
+            const badgeClass = isDemoMode ? 'badge-warning' : hasData ? 'badge-normal' : 'badge-offline';
+
+            return (
+              <div key={sensor.name} className="p-3 rounded-xl bg-[var(--muted)] flex items-center justify-between">
+                <div>
+                  <p className="font-semibold">{sensor.name}</p>
+                  <p className="text-[var(--muted-fg)]">{sensor.desc}</p>
+                </div>
+                <span className={`badge text-[10px] ${badgeClass}`}>{statusLabel}</span>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
