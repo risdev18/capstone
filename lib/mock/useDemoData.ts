@@ -164,7 +164,7 @@ export function useDemoData(options?: UseDemoDataOptions) {
             setRealReadings([]);
           }
         },
-        () => {}
+        () => { }
       );
 
       // 3. Alerts
@@ -183,7 +183,7 @@ export function useDemoData(options?: UseDemoDataOptions) {
             setRealAlerts([]);
           }
         },
-        () => {}
+        () => { }
       );
 
       // 4. Medication Events
@@ -202,7 +202,7 @@ export function useDemoData(options?: UseDemoDataOptions) {
             setRealMedEvents([]);
           }
         },
-        () => {}
+        () => { }
       );
     } catch (e) {
       console.warn('Firestore connection not active, defaulting to mock data.', e);
@@ -224,9 +224,10 @@ export function useDemoData(options?: UseDemoDataOptions) {
   }, [realDevice, realReadings, realAlerts]);
 
   const isDemoMode = useMemo(() => {
-    // Permanently disable demo simulation mode so the dashboard only shows real data.
-    return false;
-  }, []);
+    if (manualDemoOverride !== null) return manualDemoOverride;
+    // Auto-enable demo mode only when no real hardware data exists
+    return !hasRealHardwareData;
+  }, [manualDemoOverride, hasRealHardwareData]);
 
   // Derived effective readings (latest single reading per metric)
   const effectiveReadings = useMemo(() => {
@@ -302,11 +303,11 @@ export function useDemoData(options?: UseDemoDataOptions) {
         prev.map((alert) =>
           alert.id === alertId
             ? {
-                ...alert,
-                status: 'ACKNOWLEDGED',
-                acknowledgedAt: new Date().toISOString(),
-                acknowledgedBy,
-              }
+              ...alert,
+              status: 'ACKNOWLEDGED',
+              acknowledgedAt: new Date().toISOString(),
+              acknowledgedBy,
+            }
             : alert
         )
       );

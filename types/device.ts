@@ -7,7 +7,9 @@ export type SensorMetric =
   | 'spo2'
   | 'temperature'
   | 'blood_pressure_systolic'
-  | 'blood_pressure_diastolic';
+  | 'blood_pressure_diastolic'
+  | 'weight'
+  | 'ir_status';
 
 export interface Device {
   id: string;

@@ -62,6 +62,8 @@ export const singleReadingSchema = z.object({
     'temperature',
     'blood_pressure_systolic',
     'blood_pressure_diastolic',
+    'weight',
+    'ir_status',
   ]),
   value: z.number().finite(),
   unit: z.string().min(1),
@@ -106,6 +108,8 @@ export const thresholdSchema = z.object({
     'temperature',
     'blood_pressure_systolic',
     'blood_pressure_diastolic',
+    'weight', 
+    'ir_status', 
   ]),
   minValue: z.number().optional(),
   maxValue: z.number().optional(),
@@ -129,6 +133,8 @@ export const generateReportSchema = z.object({
         'temperature',
         'blood_pressure_systolic',
         'blood_pressure_diastolic',
+        'weight',
+        'ir_status',
       ])
     )
     .min(1),
@@ -166,6 +172,8 @@ export const READING_BOUNDS = {
   temperature: { min: 30, max: 45 },
   blood_pressure_systolic: { min: 50, max: 250 },
   blood_pressure_diastolic: { min: 30, max: 150 },
+  weight: { min: 0, max: 5000 },
+  ir_status: { min: 0, max: 1 },
 } as const;
 
 export function isReadingPhysicallyValid(
