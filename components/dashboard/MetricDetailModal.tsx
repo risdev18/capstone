@@ -13,6 +13,7 @@ import {
   AlertOctagon, 
   Info,
   Radio,
+  Scale,
   ExternalLink
 } from 'lucide-react';
 import Link from 'next/link';
@@ -66,13 +67,29 @@ const HARDWARE_SPECS: Record<SensorMetric, {
     samplingRate: 'Automated measurement interval',
     normalRange: '90 – 120 mmHg',
   },
-  blood_pressure_diastolic: {
+    blood_pressure_diastolic: {
     sensorName: 'Oscillometric Pressure Transducer',
     interfaceBus: 'Analog / Digital Ingestion',
     gpioPins: 'ADC Pin 34 + Solenoid Valve Pin 25',
     description: 'Identifies minimum arterial pressure between ventricular heart contractions.',
     samplingRate: 'Automated measurement interval',
     normalRange: '60 – 80 mmHg',
+  },
+  weight: {
+    sensorName: 'HX711 24-bit Load Cell Amplifier',
+    interfaceBus: '2-Wire Serial (DOUT/SCK)',
+    gpioPins: 'DOUT: GPIO 32, SCK: GPIO 33',
+    description: 'Measures pillbox compartment weight to detect tablet removal via strain-gauge load cell.',
+    samplingRate: '10 Hz continuous',
+    normalRange: '0 – 5000 g',
+  },
+  ir_status: {
+    sensorName: 'Infrared Break-Beam Detector',
+    interfaceBus: 'Digital GPIO',
+    gpioPins: 'Signal: GPIO 26 (active low)',
+    description: 'Detects physical tablet drop through the dispenser chute via IR beam interruption.',
+    samplingRate: 'Polled every loop cycle',
+    normalRange: '0 (clear) – 1 (tablet detected)',
   },
 };
 
@@ -82,6 +99,8 @@ const METRIC_ICONS = {
   temperature: Thermometer,
   blood_pressure_systolic: Activity,
   blood_pressure_diastolic: Activity,
+  weight: Scale,
+  ir_status: Radio,
 };
 
 export default function MetricDetailModal({
