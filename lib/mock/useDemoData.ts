@@ -122,13 +122,13 @@ export function useDemoData(options?: UseDemoDataOptions) {
   // Firestore Subscriptions for real hardware
   useEffect(() => {
     if (!userId) {
+      console.warn('[MediBox] ❌ No userId — skipping Firestore subscriptions');
       setIsFirestoreLoaded(true);
       return;
     }
 
-    // DEBUG: Print the Firebase Auth UID so you can copy it into Firestore device doc's ownerId
-    console.log('[MediBox DEBUG] Your Firebase Auth UID is:', userId);
-    console.log('[MediBox DEBUG] Make sure your Firestore device document has ownerId set to this EXACT value ^');
+    // DEBUG: Print the Firebase Auth UID
+    console.log('[MediBox] 🔑 Firebase Auth UID:', userId);
 
     let unsubDevice: (() => void) | undefined;
     let unsubHistory: (() => void) | undefined;
@@ -142,13 +142,25 @@ export function useDemoData(options?: UseDemoDataOptions) {
         qDevice,
         (snap) => {
           if (!snap.empty) {
-            setRealDevice(snap.docs[0].data() as Device);
+            const deviceData = snap.docs[0].data() as Device;
+            console.log('[MediBox] 📡 DEVICE SNAPSHOT:', {
+              id: snap.docs[0].id,
+              status: deviceData.status,
+              lastSeen: deviceData.lastSeen,
+              ageSeconds: Math.round((Date.now() - new Date(deviceData.lastSeen).getTime()) / 1000),
+              ownerId: deviceData.ownerId,
+            });
+            setRealDevice(deviceData);
           } else {
+            console.warn('[MediBox] ⚠️ No device found for ownerId:', userId);
             setRealDevice(null);
           }
           setIsFirestoreLoaded(true);
         },
-        () => setIsFirestoreLoaded(true)
+        (err) => {
+          console.error('[MediBox] ❌ Device snapshot error:', err);
+          setIsFirestoreLoaded(true);
+        }
       );
 
       // 2. Health Readings
@@ -163,12 +175,22 @@ export function useDemoData(options?: UseDemoDataOptions) {
         (snap) => {
           if (!snap.empty) {
             const docs = snap.docs.map((d) => d.data() as HealthReading).reverse();
+            console.log('[MediBox] 📊 READINGS UPDATE:', {
+              total: docs.length,
+              latest: docs.slice(-3).map((r) => ({
+                metric: r.metric,
+                value: r.value,
+                quality: r.quality,
+                ageSeconds: Math.round((Date.now() - new Date(r.timestamp || r.createdAt).getTime()) / 1000),
+              })),
+            });
             setRealReadings(docs);
           } else {
+            console.warn('[MediBox] ⚠️ No readings found for userId:', userId);
             setRealReadings([]);
           }
         },
-        () => { }
+        (err) => console.error('[MediBox] ❌ Readings snapshot error:', err)
       );
 
       // 3. Alerts
@@ -182,6 +204,7 @@ export function useDemoData(options?: UseDemoDataOptions) {
         qAlerts,
         (snap) => {
           if (!snap.empty) {
+            console.log('[MediBox] 🔔 Alerts loaded:', snap.docs.length);
             setRealAlerts(snap.docs.map((d) => ({ ...d.data(), id: d.id } as Alert)));
           } else {
             setRealAlerts([]);
@@ -201,6 +224,7 @@ export function useDemoData(options?: UseDemoDataOptions) {
         qEvents,
         (snap) => {
           if (!snap.empty) {
+            console.log('[MediBox] 💊 Med events loaded:', snap.docs.length);
             setRealMedEvents(snap.docs.map((d) => d.data() as MedicationEvent));
           } else {
             setRealMedEvents([]);
@@ -209,7 +233,7 @@ export function useDemoData(options?: UseDemoDataOptions) {
         () => { }
       );
     } catch (e) {
-      console.warn('Firestore connection not active, defaulting to mock data.', e);
+      console.error('[MediBox] ❌ Firestore connection failed:', e);
       setIsFirestoreLoaded(true);
     }
 
@@ -222,11 +246,9 @@ export function useDemoData(options?: UseDemoDataOptions) {
   }, [userId]);
 
   // ── Freshness check ──
-  // A reading is "fresh" if it arrived within the last 5 minutes.
-  // A device is "live" if its lastSeen is within the last 5 minutes AND status is ONLINE.
   const FRESHNESS_WINDOW_MS = 90 * 1000; // 90 seconds (1.5× heartbeat interval)
 
-  // Staleness ticker — forces re-evaluation every 30s even when Firestore stops pushing
+  // Staleness ticker — forces re-evaluation every 5s even when Firestore stops pushing
   const [stalenessTick, setStalenessTick] = useState(0);
   useEffect(() => {
     const interval = setInterval(() => setStalenessTick((t) => t + 1), 5_000);
@@ -237,26 +259,49 @@ export function useDemoData(options?: UseDemoDataOptions) {
     const now = Date.now();
 
     // Check if any VALID reading arrived recently
-    const hasFreshReadings = realReadings.some((r) => {
+    const freshReadings = realReadings.filter((r) => {
       if (r.quality === 'INVALID') return false;
       const readingAge = now - new Date(r.timestamp || r.createdAt).getTime();
       return readingAge < FRESHNESS_WINDOW_MS;
     });
-    if (hasFreshReadings) return true;
+    const hasFreshReadings = freshReadings.length > 0;
 
     // Check if device itself reports as ONLINE with a recent heartbeat
+    let deviceFresh = false;
+    let deviceAgeSec = -1;
     if (realDevice && realDevice.status === 'ONLINE' && realDevice.lastSeen) {
       const deviceAge = now - new Date(realDevice.lastSeen).getTime();
-      if (deviceAge < FRESHNESS_WINDOW_MS) return true;
+      deviceAgeSec = Math.round(deviceAge / 1000);
+      deviceFresh = deviceAge < FRESHNESS_WINDOW_MS;
     }
 
-    return false;
+    const result = hasFreshReadings || deviceFresh;
+
+    // Log every check (throttled to every other tick to avoid spam)
+    if (stalenessTick % 2 === 0 || !result) {
+      console.log(`[MediBox] 🔍 FRESHNESS CHECK (tick ${stalenessTick}):`, {
+        hasRealHardwareData: result,
+        device: realDevice ? {
+          status: realDevice.status,
+          lastSeenAgeSec: deviceAgeSec,
+          isFresh: deviceFresh,
+          threshold: `${FRESHNESS_WINDOW_MS / 1000}s`,
+        } : 'NO DEVICE',
+        readings: {
+          total: realReadings.length,
+          freshValid: freshReadings.length,
+        },
+      });
+    }
+
+    return result;
   }, [realDevice, realReadings, stalenessTick]);
 
   const isDemoMode = useMemo(() => {
     if (manualDemoOverride !== null) return manualDemoOverride;
-    // Auto-enable demo mode only when no FRESH real hardware data exists
-    return !hasRealHardwareData;
+    const result = !hasRealHardwareData;
+    console.log('[MediBox] 🎯 MODE:', result ? '🟡 DEMO (simulated)' : '🟢 REAL HARDWARE');
+    return result;
   }, [manualDemoOverride, hasRealHardwareData]);
 
   // Derived effective readings (latest single reading per metric)

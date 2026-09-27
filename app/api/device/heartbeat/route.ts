@@ -6,6 +6,8 @@ import type { DeviceLog } from '@/types/device';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
+    console.log('[API] 💓 Incoming Heartbeat Payload:', JSON.stringify(body, null, 2));
+
     const result = heartbeatSchema.safeParse(body);
 
     if (!result.success) {

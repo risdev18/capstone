@@ -79,7 +79,7 @@ export function formatRelativeTime(iso: string): string {
 
 // ─── Device Online Detection ──────────────────────────────────────────────────
 
-export function isDeviceOnline(lastSeen: string, timeoutMs = 5 * 60 * 1000): boolean {
+export function isDeviceOnline(lastSeen: string, timeoutMs = 90 * 1000): boolean {
   const diff = Date.now() - new Date(lastSeen).getTime();
   return diff < timeoutMs;
 }

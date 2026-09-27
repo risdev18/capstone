@@ -7,6 +7,8 @@ import { isReadingPhysicallyValid, READING_BOUNDS } from '@/lib/validation/schem
 export async function POST(req: Request) {
   try {
     const body = await req.json();
+    console.log('[API] 📥 Incoming Readings Payload:', JSON.stringify(body, null, 2));
+
     const result = ingestPayloadSchema.safeParse(body);
 
     if (!result.success) {
