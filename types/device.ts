@@ -74,6 +74,8 @@ export const SENSOR_METRIC_LABELS: Record<SensorMetric, string> = {
   temperature: 'Body Temperature',
   blood_pressure_systolic: 'Blood Pressure (Systolic)',
   blood_pressure_diastolic: 'Blood Pressure (Diastolic)',
+  weight: 'Pillbox Weight',
+  ir_status: 'IR Sensor',
 };
 
 export const SENSOR_UNITS: Record<SensorMetric, string> = {
@@ -82,4 +84,6 @@ export const SENSOR_UNITS: Record<SensorMetric, string> = {
   temperature: '°C',
   blood_pressure_systolic: 'mmHg',
   blood_pressure_diastolic: 'mmHg',
+  weight: 'g',
+  ir_status: '',
 };
